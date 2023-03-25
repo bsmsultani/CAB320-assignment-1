@@ -8,7 +8,7 @@ To get started, you'll need to do the following:
 
 1. Clone the repository to your local machine using the following command:
 
-git clone https://github.com/bsmsultani/CAB320-assignment-1.git
+`git clone https://github.com/bsmsultani/CAB320-assignment-1.git`
 
 
 2. Install any dependencies required by the project using the following command:
