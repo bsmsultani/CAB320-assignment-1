@@ -13,7 +13,7 @@ To get started, you'll need to do the following:
 
 2. Install any dependencies required by the project using the following command:
 
-pip install -r requirements.txt
+`pip install -r requirements.txt`
 
 3. Create a branch `git branch [name-of-the-branch]`
 
