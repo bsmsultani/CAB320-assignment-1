@@ -1,7 +1,5 @@
 # CAB320-assignment-1
 
-This repository contains the source code for my the ass.
-
 ## Getting Started
 
 To get started, you'll need to do the following:
