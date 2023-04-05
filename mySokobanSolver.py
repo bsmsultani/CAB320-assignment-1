@@ -33,6 +33,7 @@ import search
 import sokoban
 
 
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
@@ -47,7 +48,7 @@ def my_team():
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
-def taboo_cells(warehouse):
+def taboo_cells(warehouse: sokoban.Warehouse):
     '''  
     Identify the taboo cells of a warehouse. A "taboo cell" is by definition
     a cell inside a warehouse such that whenever a box get pushed on such 
@@ -72,9 +73,54 @@ def taboo_cells(warehouse):
        The returned string should NOT have marks for the worker, the targets,
        and the boxes.  
     '''
-    ##         "INSERT YOUR CODE HERE"    
-    raise NotImplementedError()
 
+    # coordinates of the walls such that the first point in the plane has (0, 0) coordinate
+
+    walls = warehouse.walls
+
+    max_x, max_y = max(walls)
+
+    non_walls = [(x, y) for x in range(max_x + 1) for y in range(max_y + 1) if (x, y) not in walls]
+
+    outside_cells = []
+
+    # if any cell's coordinate is lower or greater than the minimum and maximum coodinate for each row, then that cell is an outside cell   
+    # create dictionary with row numbers as keys and lists of x-coordinates as values
+
+    rows = {y: [x for x, y_ in walls if y_ == y] for y in set(y for x, y in walls)}
+
+    # get the minmum and maximum coordinate for each row wall
+
+    for x, y in non_walls:
+        if x > max(rows[y]) or x < min(rows[y]):
+            outside_cells.append((x, y))
+    
+
+    # inside cells are cells that are not outside cells
+
+    inside_cells = [cell for cell in non_walls if cell not in outside_cells]
+
+    # corners are cells that are inside cells and have a wall on either side
+    
+    corners = []
+    for x, y in inside_cells:
+        if (x - 1, y) in walls and (x, y - 1) in walls:
+            corners.append((x, y))
+        elif (x + 1, y) in walls and (x, y - 1) in walls:
+            corners.append((x, y))
+        elif (x - 1, y) in walls and (x, y + 1) in walls:
+            corners.append((x, y))
+        elif (x + 1, y) in walls and (x, y + 1) in walls:
+            corners.append((x, y))
+    
+
+    return corners
+    
+
+    
+
+
+        
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
@@ -173,3 +219,15 @@ def solve_weighted_sokoban(warehouse):
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+# TESTING
+
+
+
+if __name__ == "__main__":
+    wh = sokoban.Warehouse()
+    wh.load_warehouse("./warehouses/warehouse_03.txt")
+
+    print(wh)
+    taboo_cells(wh)
+
+    
