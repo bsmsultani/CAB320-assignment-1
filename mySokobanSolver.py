@@ -74,26 +74,32 @@ def taboo_cells(warehouse: sokoban.Warehouse):
        and the boxes.  
     '''
 
-    # coordinates of the walls such that the first point in the plane has (0, 0) coordinate
-
     walls = warehouse.walls
 
     max_x, max_y = max(walls)
 
     non_walls = [(x, y) for x in range(max_x + 1) for y in range(max_y + 1) if (x, y) not in walls]
 
-    outside_cells = []
+    outside_cells = set()
 
     # if any cell's coordinate is lower or greater than the minimum and maximum coodinate for each row, then that cell is an outside cell   
     # create dictionary with row numbers as keys and lists of x-coordinates as values
 
     rows = {y: [x for x, y_ in walls if y_ == y] for y in set(y for x, y in walls)}
 
+    columns = {x: [y for x_, y in walls if x_ == x] for x in set(x for x, y in walls)}
+
+
     # get the minmum and maximum coordinate for each row wall
 
     for x, y in non_walls:
         if x > max(rows[y]) or x < min(rows[y]):
-            outside_cells.append((x, y))
+            outside_cells.add((x, y))
+
+        if y > max(columns[x]) or y < min(columns[x]):
+            outside_cells.add((x, y))
+
+    
     
 
     # inside cells are cells that are not outside cells
@@ -115,11 +121,8 @@ def taboo_cells(warehouse: sokoban.Warehouse):
     
 
     return corners
-    
 
-    
-
-
+        
         
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -225,9 +228,6 @@ def solve_weighted_sokoban(warehouse):
 
 if __name__ == "__main__":
     wh = sokoban.Warehouse()
-    wh.load_warehouse("./warehouses/warehouse_03.txt")
-
+    wh.load_warehouse("./warehouses/warehouse_41.txt")
     print(wh)
-    taboo_cells(wh)
-
-    
+    print(taboo_cells(wh))
