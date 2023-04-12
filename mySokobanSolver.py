@@ -43,7 +43,7 @@ def my_team():
     of triplet of the form (student_number, first_name, last_name)
     
     '''
-    return [(11247282), 'Bismillah']
+    return [[(11247282), 'Bismillah'] [10601171, 'Lucas', 'Ferreira']]
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -154,11 +154,28 @@ class SokobanPuzzle(search.Problem):
         raise NotImplementedError()
 
     def actions(self, state):
-        """
-        Return the list of actions that can be executed in the given state.
         
-        """
-        raise NotImplementedError
+        
+        # index of the blank
+        playerposition = state.index('@')
+        L = []  # list of legal actions
+
+        #Below code will be the basis for our code. We will instead check if moving left will put the player into a wall, in whcih case they cannot move. This could be done by checking if player position exceeds the number of coloums or rows
+
+
+        # # UP: if blank not on top row, swap it with tile above it
+        # if i_blank >= self.nc:
+        #     L.append('U')
+        # # DOWN: If blank not on bottom row, swap it with tile below it
+        # if i_blank < self.nc*(self.nr-1):
+        #     L.append('D')
+        # # LEFT: If blank not in left column, swap it with tile to the left
+        # if i_blank % self.nc > 0:
+        #     L.append('L')
+        # # RIGHT: If blank not on right column, swap it with tile to the right
+        # if i_blank % self.nc < self.nc-1:
+        #     L.append('R')
+        # return L
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
