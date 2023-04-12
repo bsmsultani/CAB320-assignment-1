@@ -150,8 +150,21 @@ class SokobanPuzzle(search.Problem):
     #     You are allowed (and encouraged) to use auxiliary functions and classes
 
     
-    def __init__(self, warehouse):
-        raise NotImplementedError()
+    def __init__(self, warehouse: sokoban.Warehouse):
+        '''
+        The initial state is the initial text representation of the warehouse.
+        
+        The goal state is the text representation of the warehouse with all the target cells replaced with boxes.
+
+        In both of the above states, the position of the worker is irrelevant. As long as the boxes are in the right places,
+        and the worker has achieved it through a sequence of legal moves, the puzzle is solved.
+        '''
+
+        str_warehouse = warehouse.__str__().replace('@', ' ')
+        self.initial = str_warehouse
+        
+        self.goal = initial.replace('$', ' ').replace('.', '$')
+
 
     def actions(self, state):
         
@@ -250,5 +263,10 @@ def solve_weighted_sokoban(warehouse):
 if __name__ == "__main__":
     wh = sokoban.Warehouse()
     wh.load_warehouse("./warehouses/warehouse_41.txt")
+
+    initial = wh.__str__().replace('@', ' ')
+    goal = initial.__str__().replace('$', ' ').replace('.', '$')
+
     print(wh)
-    print(taboo_cells(wh))
+    print(initial)
+    print(goal)
