@@ -177,6 +177,10 @@ class SokobanPuzzle(search.Problem):
         #     L.append('R')
         # return L
 
+
+    def result(self, state, action):
+        raise NotImplementedError()
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 def check_elem_action_seq(warehouse, action_seq):
