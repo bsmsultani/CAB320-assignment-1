@@ -43,7 +43,7 @@ def my_team():
     of triplet of the form (student_number, first_name, last_name)
     
     '''
-    return [[(11247282), 'Bismillah'] [10601171, 'Lucas', 'Ferreira']]
+    return [[(11247282), 'Bismillah'], [10601171, 'Lucas', 'Ferreira']]
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -156,39 +156,60 @@ class SokobanPuzzle(search.Problem):
         
         The goal state is the text representation of the warehouse with all the target cells replaced with boxes.
 
-        In both of the above states, the position of the worker is irrelevant. As long as the boxes are in the right places,
+        In the goal state, the position of the worker is irrelevant. As long as the boxes are in the right places,
         and the worker has achieved it through a sequence of legal moves, the puzzle is solved.
         '''
 
-        str_warehouse = warehouse.__str__().replace('@', ' ')
-        self.initial = str_warehouse
+        self.warehouse = warehouse
+
+        str_warehouse = warehouse.__str__()
+        initial = str_warehouse
         
-        self.goal = initial.replace('$', ' ').replace('.', '$')
+        goal = initial.replace('$', ' ').replace('.', '$').replace('@', ' ')
+
+        super().__init__(initial, goal)
 
 
     def actions(self, state):
         
         
-        # index of the blank
+        # index of the @ symbol in the state string
+        # merge the state of the warehouse into a single string, and remove the new line character
+        state = state.replace('\n', '')
+        
         playerposition = state.index('@')
+        
         L = []  # list of legal actions
 
-        #Below code will be the basis for our code. We will instead check if moving left will put the player into a wall, in whcih case they cannot move. This could be done by checking if player position exceeds the number of coloums or rows
+        # returns the coordinate of the agent in the current state        
+        y, x = divmod(playerposition, self.warehouse.ncols)
 
+        # for debugging, self.warehouse.worker is the coordinate of the agent in the initial state
+        # x, y = self.warehouse.worker
+        # see more by running the code and seeing __name__ == "__main__" below 
+        print(self.warehouse.worker)
+        print(x, y)
 
-        # # UP: if blank not on top row, swap it with tile above it
-        # if i_blank >= self.nc:
-        #     L.append('U')
-        # # DOWN: If blank not on bottom row, swap it with tile below it
-        # if i_blank < self.nc*(self.nr-1):
-        #     L.append('D')
-        # # LEFT: If blank not in left column, swap it with tile to the left
-        # if i_blank % self.nc > 0:
-        #     L.append('L')
-        # # RIGHT: If blank not on right column, swap it with tile to the right
-        # if i_blank % self.nc < self.nc-1:
-        #     L.append('R')
-        # return L
+        # generate a list of legal moves (it can go anywhere expect into the walls)
+
+        # When the agent is inside the warehouse and there is no wall to its left, it can move left
+        if (x - 1, y) not in self.warehouse.walls:
+            L.append("L")
+        
+        # Right
+        if (x + 1, y) not in self.warehouse.walls:
+            L.append("R")
+
+        # Up
+        if (x, y - 1) not in self.warehouse.walls:
+            L.append("U")
+        
+        # Down
+        if (x, y + 1) not in self.warehouse.walls:
+            L.append("D")
+        
+        return L
+
 
 
     def result(self, state, action):
@@ -262,11 +283,16 @@ def solve_weighted_sokoban(warehouse):
 
 if __name__ == "__main__":
     wh = sokoban.Warehouse()
-    wh.load_warehouse("./warehouses/warehouse_41.txt")
 
-    initial = wh.__str__().replace('@', ' ')
-    goal = initial.__str__().replace('$', ' ').replace('.', '$')
+    # CHANGE THIS TO TEST DIFFERENT WAREHOUSES, FOR EXAMPLE:
+    wh.load_warehouse("./warehouses/warehouse_6n.txt")
+
+    pz = SokobanPuzzle(wh)
+
+    # for example lets print the list of legal moves for the initial state
+
+    print("Legal moves for the initial state:")
 
     print(wh)
-    print(initial)
-    print(goal)
+
+    print(pz.actions(pz.initial))
