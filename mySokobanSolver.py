@@ -162,7 +162,9 @@ class SokobanPuzzle(search.Problem):
 
         self.warehouse = warehouse
 
-        str_warehouse = warehouse.__str__()
+        # make the warehouse into a single string, and remove the new line character
+
+        str_warehouse = warehouse.__str__().replace('\n', '')
         initial = str_warehouse
         
         goal = initial.replace('$', ' ').replace('.', '$').replace('@', ' ')
@@ -174,8 +176,6 @@ class SokobanPuzzle(search.Problem):
         
         
         # index of the @ symbol in the state string
-        # merge the state of the warehouse into a single string, and remove the new line character
-        state = state.replace('\n', '')
         
         playerposition = state.index('@')
         
@@ -194,26 +194,58 @@ class SokobanPuzzle(search.Problem):
 
         # When the agent is inside the warehouse and there is no wall to its left, it can move left
         if (x - 1, y) not in self.warehouse.walls:
-            L.append("L")
+            L.append("Left")
         
         # Right
         if (x + 1, y) not in self.warehouse.walls:
-            L.append("R")
+            L.append("Right")
 
         # Up
         if (x, y - 1) not in self.warehouse.walls:
-            L.append("U")
+            L.append("Up")
         
         # Down
         if (x, y + 1) not in self.warehouse.walls:
-            L.append("D")
+            L.append("Down")
         
         return L
 
 
 
     def result(self, state, action):
-        raise NotImplementedError()
+
+        if action not in self.actions(state):
+            raise Exception("Illegal action")
+        
+        # index of the @ symbol in the state string
+
+        playerposition = state.index('@')
+
+        # returns the coordinate of the agent in the current state
+
+        y, x = divmod(playerposition, self.warehouse.ncols)
+
+        # if action is left, move the agent to the left
+
+        if action == "Left":
+            x -= 1
+        
+        # if action is right, move the agent to the right
+
+        elif action == "Right":
+            x += 1
+
+        elif action == "Up":
+            y -= 1
+        
+        elif action == "Down":
+            y += 1
+
+        # return the new state of the warehouse
+
+        return None
+        
+        
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
