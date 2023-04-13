@@ -227,6 +227,8 @@ class SokobanPuzzle(search.Problem):
 
         The movement of the agent may also cause the agent to push a box. Therefore we need to check if the agent is pushing a box.
 
+        Then we also need to update the cost of new state. THIS IS THE ONLY PART THAT IS NOT IMPLEMENTED YET.
+
         '''
 
         if action not in self.actions(state):
@@ -314,7 +316,15 @@ class SokobanPuzzle(search.Problem):
             next_state = state.state[:playerposition] + ' ' + state.state[playerposition + 1:]
             next_state = state.state[:newposition] + '@' + state.state[newposition + 1:]
         
-        return search.Node(next_state)
+        # create a next node with all the information
+
+        next_state = search.Node(next_state)
+        next_state.parent = state
+        next_state.action = action
+        next_state.path_cost = self.path_cost(state.path_cost, state, action, next_state)
+
+        
+        return next_state
 
 
     def goal_test(self, state: search.Node):
@@ -324,7 +334,8 @@ class SokobanPuzzle(search.Problem):
 
         # we position of the agent in the current state is irrelevant
 
-        return state.state == self.goal
+        return state.state == self.goal.state
+    
     
 
     def path_cost(self, c, state1, action, state2):
@@ -422,4 +433,9 @@ if __name__ == "__main__":
 
     # add the new lines to make the output more readable
 
-    print(x.action)
+    result = ""
+
+    for i in range(0, len(x.state), wh.ncols):
+        result += x[i:i + wh.ncols] + "\n"
+
+    print(result)
