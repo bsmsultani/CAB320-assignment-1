@@ -43,7 +43,7 @@ def my_team():
     of triplet of the form (student_number, first_name, last_name)
     
     '''
-    return [[(11247282), 'Bismillah'] [10601171, 'Lucas', 'Ferreira']]
+    return [[(11247282), 'Bismillah'], [10601171, 'Lucas', 'Ferreira']]
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -156,43 +156,193 @@ class SokobanPuzzle(search.Problem):
         
         The goal state is the text representation of the warehouse with all the target cells replaced with boxes.
 
-        In both of the above states, the position of the worker is irrelevant. As long as the boxes are in the right places,
+        In the goal state, the position of the worker is irrelevant. As long as the boxes are in the right places,
         and the worker has achieved it through a sequence of legal moves, the puzzle is solved.
         '''
 
-        str_warehouse = warehouse.__str__().replace('@', ' ')
-        self.initial = str_warehouse
+        self.warehouse = warehouse
+
+        # make the warehouse into a single string, and remove the new line character
+
+        str_warehouse = warehouse.__str__().replace('\n', '')
+        initial = str_warehouse
         
-        self.goal = initial.replace('$', ' ').replace('.', '$')
+        goal = initial.replace('$', ' ').replace('.', '$').replace('@', ' ')
+
+        super().__init__(search.Node(initial), search.Node(goal))
 
 
-    def actions(self, state):
+    def actions(self, state: search.Node):
         
+        '''
+        Return the list of legal actions that can be executed in the given state.
+        '''
         
-        # index of the blank
-        playerposition = state.index('@')
+        # index of the @ symbol in the state string
+        
+        playerposition = state.state.index('@')
+        
         L = []  # list of legal actions
 
-        #Below code will be the basis for our code. We will instead check if moving left will put the player into a wall, in whcih case they cannot move. This could be done by checking if player position exceeds the number of coloums or rows
+        # returns the coordinate of the agent in the current state        
+        y, x = divmod(playerposition, self.warehouse.ncols)
+
+        # for debugging, self.warehouse.worker is the coordinate of the agent in the initial state
+        # x, y = self.warehouse.worker
+        # see more by running the code and seeing __name__ == "__main__" below 
+        print(self.warehouse.worker)
+        print(x, y)
+
+        # generate a list of legal moves (it can go anywhere expect into the walls)
+
+        # When the agent is inside the warehouse and there is no wall to its left, it can move left
+        if (x - 1, y) not in self.warehouse.walls:
+            L.append("Left")
+        
+        # Right
+        if (x + 1, y) not in self.warehouse.walls:
+            L.append("Right")
+
+        # Up
+        if (x, y - 1) not in self.warehouse.walls:
+            L.append("Up")
+        
+        # Down
+        if (x, y + 1) not in self.warehouse.walls:
+            L.append("Down")
+        
+        return L
 
 
-        # # UP: if blank not on top row, swap it with tile above it
-        # if i_blank >= self.nc:
-        #     L.append('U')
-        # # DOWN: If blank not on bottom row, swap it with tile below it
-        # if i_blank < self.nc*(self.nr-1):
-        #     L.append('D')
-        # # LEFT: If blank not in left column, swap it with tile to the left
-        # if i_blank % self.nc > 0:
-        #     L.append('L')
-        # # RIGHT: If blank not on right column, swap it with tile to the right
-        # if i_blank % self.nc < self.nc-1:
-        #     L.append('R')
-        # return L
+
+    def result(self, state: search.Node, action):
+
+        '''
+
+        Function description:
+
+        Return the state that results from executing the given action in the given state.
+
+        The state is altered by moving the agent in the given direction, if that direction is legal.
+
+        The movement of the agent may also cause the agent to push a box. Therefore we need to check if the agent is pushing a box.
+
+        Then we also need to update the cost of new state. THIS IS THE ONLY PART THAT IS NOT IMPLEMENTED YET.
+
+        '''
+
+        if action not in self.actions(state):
+            raise Exception("Illegal action")
+        
+        # index of the @ symbol in the state string
+
+        playerposition = state.state.index('@')
+
+        # returns the coordinate of the agent in the current state
+
+        y, x = divmod(playerposition, self.warehouse.ncols)
+
+        # if action is left, move the agent to the left
+
+        if action == "Left":
+            x -= 1
+        
+        # if action is right, move the agent to the right
+
+        elif action == "Right":
+            x += 1
+
+        elif action == "Up":
+            y -= 1
+        
+        elif action == "Down":
+            y += 1
+
+        # now the agent's position has changed to a coordinate (x, y) based on the action taken
+
+        # get the index of the new position of the agent
+
+        newposition = y * self.warehouse.ncols + x
+
+        # now we need to check if the agent has pushed a box
+
+        # if the agent has pushed a box, we need to change the state string to reflect the change
+
+        if (x, y) in self.warehouse.boxes:
+
+            # if the agent pushes a box to the left, we need to check if the box can move to the left
+
+            if action == "Left":
+
+                # the agent can only push the box to the left if there is no wall to the left of the box and there is no box to the left of the box
+
+                if (x - 1, y) not in self.warehouse.walls and (x - 1, y) not in self.warehouse.boxes:
+                    new_box_idx = (y * self.warehouse.ncols + x - 1)
+            
+            elif action == "Right":
+
+                if (x + 1, y) not in self.warehouse.walls and (x + 1, y) not in self.warehouse.boxes:
+                    new_box_idx = (y * self.warehouse.ncols + x + 1)
+                
+            elif action == "Up":
+                    
+                if (x, y - 1) not in self.warehouse.walls and (x, y - 1) not in self.warehouse.boxes:
+                    new_box_idx = ((y - 1) * self.warehouse.ncols + x)
+
+            elif action == "Down":
+                    
+                if (x, y + 1) not in self.warehouse.walls and (x, y + 1) not in self.warehouse.boxes:
+                    new_box_idx = ((y + 1) * self.warehouse.ncols + x)
+
+            else:
+                raise Exception("Illegal action")
+
+        # if the agent has not pushed a box, we can just move the agent to the new position   
+        else:
+            new_box_idx = None
+        
+
+        # now we need to change the state string to reflect the change
 
 
-    def result(self, state, action):
-        raise NotImplementedError()
+        # if the agent has pushed a box, we need to change the state string to reflect the change
+
+        if new_box_idx is not None:
+            next_state = state.state[:playerposition] + ' ' + state.state[playerposition + 1:]
+            next_state = state.state[:newposition] + '@' + state.state[newposition + 1:]
+            next_state = state.state[:new_box_idx] + '$' + state.state[new_box_idx + 1:]
+        
+        else: 
+            next_state = state.state[:playerposition] + ' ' + state.state[playerposition + 1:]
+            next_state = state.state[:newposition] + '@' + state.state[newposition + 1:]
+        
+        # create a next node with all the information
+
+        next_state = search.Node(next_state)
+        next_state.parent = state
+        next_state.action = action
+        next_state.path_cost = self.path_cost(state.path_cost, state, action, next_state)
+
+        
+        return next_state
+
+
+    def goal_test(self, state: search.Node):
+        '''
+        Return True if the state is a goal state or False, otherwise.
+        '''
+
+        # we position of the agent in the current state is irrelevant
+
+        return state.state == self.goal.state
+    
+    
+
+    def path_cost(self, c, state1, action, state2):
+        '''
+        Return the cost of a solution path that arrives at state2 from state1 via action, assuming cost c to get up to state1.
+        '''
+        return c + 1
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -262,11 +412,30 @@ def solve_weighted_sokoban(warehouse):
 
 if __name__ == "__main__":
     wh = sokoban.Warehouse()
-    wh.load_warehouse("./warehouses/warehouse_41.txt")
 
-    initial = wh.__str__().replace('@', ' ')
-    goal = initial.__str__().replace('$', ' ').replace('.', '$')
+    # CHANGE THIS TO TEST DIFFERENT WAREHOUSES, FOR EXAMPLE:
+    wh.load_warehouse("./warehouses/warehouse_6n.txt")
 
-    print(wh)
-    print(initial)
-    print(goal)
+    pz = SokobanPuzzle(wh)
+
+    # for example lets print the list of legal moves for the initial state
+
+    print("Legal moves for the initial state:")
+
+    initial_state = pz.initial
+
+    print(pz.actions(pz.initial))
+
+    # you can change the action for the initial state to see the result which is the new state
+    # as you can move the agent to the left, right, up or down
+
+    x = pz.result(pz.initial, "Down")
+
+    # add the new lines to make the output more readable
+
+    result = ""
+
+    for i in range(0, len(x.state), wh.ncols):
+        result += x[i:i + wh.ncols] + "\n"
+
+    print(result)
