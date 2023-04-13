@@ -169,10 +169,10 @@ class SokobanPuzzle(search.Problem):
         
         goal = initial.replace('$', ' ').replace('.', '$').replace('@', ' ')
 
-        super().__init__(initial, goal)
+        super().__init__(search.Node(initial), search.Node(goal))
 
 
-    def actions(self, state):
+    def actions(self, state: search.Node):
         
         '''
         Return the list of legal actions that can be executed in the given state.
@@ -180,7 +180,7 @@ class SokobanPuzzle(search.Problem):
         
         # index of the @ symbol in the state string
         
-        playerposition = state.index('@')
+        playerposition = state.state.index('@')
         
         L = []  # list of legal actions
 
@@ -215,7 +215,7 @@ class SokobanPuzzle(search.Problem):
 
 
 
-    def result(self, state, action):
+    def result(self, state: search.Node, action):
 
         '''
 
@@ -234,7 +234,7 @@ class SokobanPuzzle(search.Problem):
         
         # index of the @ symbol in the state string
 
-        playerposition = state.index('@')
+        playerposition = state.state.index('@')
 
         # returns the coordinate of the agent in the current state
 
@@ -302,19 +302,36 @@ class SokobanPuzzle(search.Problem):
 
         # now we need to change the state string to reflect the change
 
+
         # if the agent has pushed a box, we need to change the state string to reflect the change
 
         if new_box_idx is not None:
-            state = state[:playerposition] + ' ' + state[playerposition + 1:]
-            state = state[:newposition] + '@' + state[newposition + 1:]
-            state = state[:new_box_idx] + '$' + state[new_box_idx + 1:]
+            next_state = state.state[:playerposition] + ' ' + state.state[playerposition + 1:]
+            next_state = state.state[:newposition] + '@' + state.state[newposition + 1:]
+            next_state = state.state[:new_box_idx] + '$' + state.state[new_box_idx + 1:]
         
         else: 
-            state = state[:playerposition] + ' ' + state[playerposition + 1:]
-            state = state[:newposition] + '@' + state[newposition + 1:]
-
-        return state        
+            next_state = state.state[:playerposition] + ' ' + state.state[playerposition + 1:]
+            next_state = state.state[:newposition] + '@' + state.state[newposition + 1:]
         
+        return search.Node(next_state)
+
+
+    def goal_test(self, state: search.Node):
+        '''
+        Return True if the state is a goal state or False, otherwise.
+        '''
+
+        # we position of the agent in the current state is irrelevant
+
+        return state.state == self.goal
+    
+
+    def path_cost(self, c, state1, action, state2):
+        '''
+        Return the cost of a solution path that arrives at state2 from state1 via action, assuming cost c to get up to state1.
+        '''
+        return c + 1
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -394,15 +411,15 @@ if __name__ == "__main__":
 
     print("Legal moves for the initial state:")
 
-    print(wh)
+    initial_state = pz.initial
 
     print(pz.actions(pz.initial))
 
+    # you can change the action for the initial state to see the result which is the new state
+    # as you can move the agent to the left, right, up or down
+
     x = pz.result(pz.initial, "Down")
 
-    result = ""
+    # add the new lines to make the output more readable
 
-    for i in range(0, len(x), wh.ncols):
-        result += x[i:i + wh.ncols] + "\n"
-
-    print(result)
+    print(x.action)
