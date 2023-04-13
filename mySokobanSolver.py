@@ -246,6 +246,7 @@ class SokobanPuzzle(search.Problem):
 
         if action == "Left":
             x -= 1
+            
         
         # if action is right, move the agent to the right
 
@@ -313,8 +314,9 @@ class SokobanPuzzle(search.Problem):
             next_state = state.state[:new_box_idx] + '$' + state.state[new_box_idx + 1:]
         
         else: 
-            next_state = state.state[:playerposition] + ' ' + state.state[playerposition + 1:]
-            next_state = state.state[:newposition] + '@' + state.state[newposition + 1:]
+            next_state = state.state[:playerposition] +  ' ' + state.state[playerposition + 1:]
+            next_state = next_state[:newposition] + '@' + next_state[newposition + 1:]
+        
         
         # create a next node with all the information
 
@@ -322,7 +324,7 @@ class SokobanPuzzle(search.Problem):
         next_state.parent = state
         next_state.action = action
         next_state.path_cost = self.path_cost(state.path_cost, state, action, next_state)
-
+        
         
         return next_state
 
@@ -426,16 +428,42 @@ if __name__ == "__main__":
 
     print(pz.actions(pz.initial))
 
+    result = ""
+
+    for i in range(0, len(initial_state.state), wh.ncols):
+        result += initial_state.state[i:i + wh.ncols] + "\n"
+
+    print(result)
+
     # you can change the action for the initial state to see the result which is the new state
     # as you can move the agent to the left, right, up or down
 
-    x = pz.result(pz.initial, "Down")
+    x = pz.result(pz.initial, "Left")
 
     # add the new lines to make the output more readable
 
     result = ""
 
     for i in range(0, len(x.state), wh.ncols):
-        result += x[i:i + wh.ncols] + "\n"
+        result += x.state[i:i + wh.ncols] + "\n"
+
+    print(result)
+
+    print(pz.actions(x))
+    x = pz.result(x, "Up")
+
+    result = ""
+
+    for i in range(0, len(x.state), wh.ncols):
+        result += x.state[i:i + wh.ncols] + "\n"
+
+    print(result)
+    print(pz.actions(x))
+    x = pz.result(x, "Down")
+
+    result = ""
+
+    for i in range(0, len(x.state), wh.ncols):
+        result += x.state[i:i + wh.ncols] + "\n"
 
     print(result)
