@@ -314,7 +314,7 @@ class SokobanPuzzle(search.Problem):
             next_state = state.state[:new_box_idx] + '$' + state.state[new_box_idx + 1:]
         
         else: 
-            next_state = state.state[:playerposition - 1] +  ' ' + state.state[playerposition + 1:]
+            next_state = state.state[:playerposition] +  ' ' + state.state[playerposition + 1:]
             next_state = next_state[:newposition] + '@' + next_state[newposition + 1:]
         
         
