@@ -399,17 +399,30 @@ def check_elem_action_seq(warehouse: sokoban.Warehouse, action_seq):
 
     walls = warehouse.walls
 
-
+    boxes = warehouse.boxes
 
     pz = SokobanPuzzle(warehouse)
 
     state = pz.initial
+
+    #Inital state check
+    playerposition = state.state.index("@")
+    y, x = divmod(playerposition, warehouse.ncols)
+    playerposition = (x, y)
+
+    #check if player position is in a wall or box if the move is made
+
+    if playerposition in walls or playerposition in boxes:
+        return "Impossible"
 
 
     for move in action_seq:
 
         #update boxes, incase any have been moved
         boxes = warehouse.boxes
+        
+        #move to next state
+        state = pz.result(state, move)
 
         #extract the players cordinates for the move that has just occured
 
@@ -422,9 +435,7 @@ def check_elem_action_seq(warehouse: sokoban.Warehouse, action_seq):
         if playerposition in walls or playerposition in boxes:
             return "Impossible"
         
-        #Update the state of the puzzle to reflect a valid move
-        state = pz.result(state, move)
-    
+            
     print_puzzle(state)
         
 
@@ -493,9 +504,9 @@ if __name__ == "__main__":
 
     initial_state = pz.initial
 
-    action_sequence = ["Right", "Right"]
+    action_sequence = ["Left", "Left", "Left", "Left", "Left", "Left"]
 
-    check_elem_action_seq(wh, action_sequence)
+    print(check_elem_action_seq(wh, action_sequence))
 
 """     print(pz.actions(pz.initial))
 
