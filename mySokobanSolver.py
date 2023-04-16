@@ -231,8 +231,8 @@ class SokobanPuzzle(search.Problem):
 
         '''
 
-        if action not in self.actions(state):
-            raise Exception("Illegal action")
+        # if action not in self.actions(state):
+        #     raise Exception("Illegal action")
         
         # index of the @ symbol in the state string
 
@@ -278,22 +278,41 @@ class SokobanPuzzle(search.Problem):
                 # the agent can only push the box to the left if there is no wall to the left of the box and there is no box to the left of the box
 
                 if (x - 1, y) not in self.warehouse.walls and (x - 1, y) not in self.warehouse.boxes:
-                    new_box_idx = (y * self.warehouse.ncols + x - 1)
+                    new_box_idx = (y * self.warehouse.ncols + x - 1)      
+                    
+                    #Update warehouse to reflect the box has move
+                    box_to_update = self.warehouse.boxes.index((x, y)) #find the specific box that needs to be updated be checking which box has the current player's cordinators, as the player has already moved into a box
+                    self.warehouse.boxes[box_to_update] = (x - 1, y) #update the boxes position with its new position
+                else: #We can have a case where a box is "pushed" but is against a wall and therefore does not move. In this case we need to set the new_box_idx to be none or we will trigger a later condition (line 322) which updates state when a box has not actually been move
+                    new_box_idx = None
             
             elif action == "Right":
 
                 if (x + 1, y) not in self.warehouse.walls and (x + 1, y) not in self.warehouse.boxes:
                     new_box_idx = (y * self.warehouse.ncols + x + 1)
+                    box_to_update = self.warehouse.boxes.index((x, y))
+                    self.warehouse.boxes[box_to_update] = (x + 1, y)
+                else:
+                    new_box_idx = None
                 
             elif action == "Up":
                     
                 if (x, y - 1) not in self.warehouse.walls and (x, y - 1) not in self.warehouse.boxes:
                     new_box_idx = ((y - 1) * self.warehouse.ncols + x)
+                    box_to_update = self.warehouse.boxes.index((x, y))
+                    self.warehouse.boxes[box_to_update] = (x, y - 1)
+                else:
+                    new_box_idx = None
+
 
             elif action == "Down":
                     
                 if (x, y + 1) not in self.warehouse.walls and (x, y + 1) not in self.warehouse.boxes:
                     new_box_idx = ((y + 1) * self.warehouse.ncols + x)
+                    box_to_update = self.warehouse.boxes.index((x, y))
+                    self.warehouse.boxes[box_to_update] = (x + 1, y)
+                else:
+                    new_box_idx = None
 
             else:
                 raise Exception("Illegal action")
@@ -310,8 +329,8 @@ class SokobanPuzzle(search.Problem):
 
         if new_box_idx is not None:
             next_state = state.state[:playerposition] + ' ' + state.state[playerposition + 1:]
-            next_state = state.state[:newposition] + '@' + state.state[newposition + 1:]
-            next_state = state.state[:new_box_idx] + '$' + state.state[new_box_idx + 1:]
+            next_state = next_state[:newposition] + '@' + next_state[newposition + 1:]
+            next_state = next_state[:new_box_idx] + '$' + next_state[new_box_idx + 1:]
         
         else: 
             next_state = state.state[:playerposition] +  ' ' + state.state[playerposition + 1:]
@@ -348,7 +367,7 @@ class SokobanPuzzle(search.Problem):
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-def check_elem_action_seq(warehouse, action_seq):
+def check_elem_action_seq(warehouse: sokoban.Warehouse, action_seq):
     '''
     
     Determine if the sequence of actions listed in 'action_seq' is legal or not.
@@ -373,8 +392,43 @@ def check_elem_action_seq(warehouse, action_seq):
     '''
     
     ##         "INSERT YOUR CODE HERE"
-    
-    raise NotImplementedError()
+
+    ## Situations which are illegal: Box in wall, pushing 2 boxes, player in wall, player in a box
+
+
+
+    walls = warehouse.walls
+
+
+
+    pz = SokobanPuzzle(warehouse)
+
+    state = pz.initial
+
+
+    for move in action_seq:
+
+        #update boxes, incase any have been moved
+        boxes = warehouse.boxes
+
+        #extract the players cordinates for the move that has just occured
+
+        playerposition = state.state.index("@")
+        y, x = divmod(playerposition, warehouse.ncols)
+        playerposition = (x, y)
+
+        #check if player position is in a wall or box if the move is made
+
+        if playerposition in walls or playerposition in boxes:
+            return "Impossible"
+        
+        #Update the state of the puzzle to reflect a valid move
+        state = pz.result(state, move)
+        
+
+
+    return warehouse.__str__()
+
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -416,7 +470,7 @@ if __name__ == "__main__":
     wh = sokoban.Warehouse()
 
     # CHANGE THIS TO TEST DIFFERENT WAREHOUSES, FOR EXAMPLE:
-    wh.load_warehouse("./warehouses/warehouse_6n.txt")
+    wh.load_warehouse("./warehouses/warehouse_8b.txt")
 
     pz = SokobanPuzzle(wh)
 
@@ -426,7 +480,11 @@ if __name__ == "__main__":
 
     initial_state = pz.initial
 
-    print(pz.actions(pz.initial))
+    action_sequence = ["Up", "Left", "Left", "Left"]
+
+    print(check_elem_action_seq(wh, action_sequence))
+
+"""     print(pz.actions(pz.initial))
 
     result = ""
 
@@ -466,4 +524,4 @@ if __name__ == "__main__":
     for i in range(0, len(x.state), wh.ncols):
         result += x.state[i:i + wh.ncols] + "\n"
 
-    print(result)
+    print(result) """
