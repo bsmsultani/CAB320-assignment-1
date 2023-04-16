@@ -424,10 +424,9 @@ def check_elem_action_seq(warehouse: sokoban.Warehouse, action_seq):
         
         #Update the state of the puzzle to reflect a valid move
         state = pz.result(state, move)
+    
+    print_puzzle(state)
         
-
-
-    return warehouse.__str__()
 
 
 
@@ -462,6 +461,20 @@ def solve_weighted_sokoban(warehouse):
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+def print_puzzle(state):
+    result = ""
+
+    for i in range(0, len(state.state), wh.ncols):
+        result += state.state[i:i + wh.ncols] + "\n"
+
+    print(result)
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
+
+
 # TESTING
 
 
@@ -480,9 +493,9 @@ if __name__ == "__main__":
 
     initial_state = pz.initial
 
-    action_sequence = ["Up", "Left", "Left", "Left"]
+    action_sequence = ["Right", "Right"]
 
-    print(check_elem_action_seq(wh, action_sequence))
+    check_elem_action_seq(wh, action_sequence)
 
 """     print(pz.actions(pz.initial))
 
