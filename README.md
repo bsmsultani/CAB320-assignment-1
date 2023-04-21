@@ -29,3 +29,6 @@ To get started, you'll need to do the following:
 
 10. Wait for the pull request to be reviewed and merged
 
+11. Once pull request is merged, delete the branch from the local machine as well as GitHub. This marks the end of 'feature implementation'.
+
+12. Person 2: Person 1 has pushed changes, in order for person 2 to use the newest code, they must `git pull` to pull the newest code before they make changes. Otherwise it can lead to conflicts.
