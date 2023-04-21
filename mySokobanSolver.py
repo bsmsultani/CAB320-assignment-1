@@ -310,7 +310,7 @@ class SokobanPuzzle(search.Problem):
                 if (x, y + 1) not in self.warehouse.walls and (x, y + 1) not in self.warehouse.boxes:
                     new_box_idx = ((y + 1) * self.warehouse.ncols + x)
                     box_to_update = self.warehouse.boxes.index((x, y))
-                    self.warehouse.boxes[box_to_update] = (x + 1, y)
+                    self.warehouse.boxes[box_to_update] = (x, y + + 1)
                 else:
                     new_box_idx = None
 
@@ -364,6 +364,33 @@ class SokobanPuzzle(search.Problem):
         Return the cost of a solution path that arrives at state2 from state1 via action, assuming cost c to get up to state1.
         '''
         return c + 1
+    
+    def h(self, n):
+        '''
+        A simple heuristic which calculates the Manhatten Distance between the boxes and targets for each state
+        '''
+
+        warehouse = self.warehouse
+        
+
+        boxes = warehouse.boxes
+        targets = warehouse.targets
+
+        manhattenDistance = 0
+
+
+        for i in range (len(boxes)):
+            #convert box and target from (x, y) to position
+            box = boxes[i][1] * warehouse.ncols + boxes[i][0]
+            target = targets[i][1] * warehouse.ncols + targets[i][0]
+
+            
+            manhattenDistance += abs(box - target)
+
+        return(manhattenDistance)
+   
+    
+    
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -390,8 +417,7 @@ def check_elem_action_seq(warehouse: sokoban.Warehouse, action_seq):
                the sequence of actions.  This must be the same string as the
                string returned by the method  Warehouse.__str__()
     '''
-    
-    ##         "INSERT YOUR CODE HERE"
+
 
     ## Situations which are illegal: Box in wall, pushing 2 boxes, player in wall, player in a box
 
@@ -434,6 +460,7 @@ def check_elem_action_seq(warehouse: sokoban.Warehouse, action_seq):
 
         if playerposition in walls or playerposition in boxes:
             return "Impossible"
+            
         
             
     print_puzzle(state)
@@ -443,7 +470,7 @@ def check_elem_action_seq(warehouse: sokoban.Warehouse, action_seq):
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-def solve_weighted_sokoban(warehouse):
+def solve_weighted_sokoban(puzzle: SokobanPuzzle):
     '''
     This function analyses the given warehouse.
     It returns the two items. The first item is an action sequence solution. 
@@ -467,18 +494,33 @@ def solve_weighted_sokoban(warehouse):
 
     '''
     
-    raise NotImplementedError()
+    sol = search.astar_graph_search(puzzle)
+
+    if sol:
+        return "A solution was found"
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 def print_puzzle(state):
+    '''
+    A function that returns the state of the puzzle in string format
+
+    @param
+     state: a valid state object
+    
+    '''
     result = ""
 
     for i in range(0, len(state.state), wh.ncols):
         result += state.state[i:i + wh.ncols] + "\n"
 
     print(result)
+
+
+
+
+    
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -498,54 +540,18 @@ if __name__ == "__main__":
 
     pz = SokobanPuzzle(wh)
 
+    #Solve
+
+    solve_weighted_sokoban(pz)
+
     # for example lets print the list of legal moves for the initial state
 
     print("Legal moves for the initial state:")
 
     initial_state = pz.initial
 
-    action_sequence = ["Left", "Left", "Left", "Left", "Left", "Left"]
 
-    print(check_elem_action_seq(wh, action_sequence))
+    action_sequence = ["Up", "Up", "Left", "Left", "Left", "Down", "Up", "Right", "Right", "Right", "Down", "Down", "Left", "Left", "Left", "Up", "Right", "Right"]
 
-"""     print(pz.actions(pz.initial))
+    print_puzzle(initial_state)
 
-    result = ""
-
-    for i in range(0, len(initial_state.state), wh.ncols):
-        result += initial_state.state[i:i + wh.ncols] + "\n"
-
-    print(result)
-
-    # you can change the action for the initial state to see the result which is the new state
-    # as you can move the agent to the left, right, up or down
-
-    x = pz.result(pz.initial, "Left")
-
-    # add the new lines to make the output more readable
-
-    result = ""
-
-    for i in range(0, len(x.state), wh.ncols):
-        result += x.state[i:i + wh.ncols] + "\n"
-
-    print(result)
-
-    print(pz.actions(x))
-    x = pz.result(x, "Up")
-
-    result = ""
-
-    for i in range(0, len(x.state), wh.ncols):
-        result += x.state[i:i + wh.ncols] + "\n"
-
-    print(result)
-    print(pz.actions(x))
-    x = pz.result(x, "Down")
-
-    result = ""
-
-    for i in range(0, len(x.state), wh.ncols):
-        result += x.state[i:i + wh.ncols] + "\n"
-
-    print(result) """
