@@ -377,19 +377,58 @@ class SokobanPuzzle(search.Problem):
         # if the agent has moved
         else:
             
-            initial_boxes = [i for i, x in enumerate(state1.state) if x == '$']
 
-            # if the agent's new position is the same position as a box in the initial state
-            # then the agent has pushed a box, therefore path cost is 1 + weight of the box
-            if self.warehouse.worker in initial_boxes:
-                weight_idx = self.warehouse.boxes.index(self.warehouse.worker)
-                return c + 1 + self.warehouse.weights[weight_idx]
+
+            # get the indexes of all the boxes in the initial state
+            initial_boxes = []
+            for i in range(len(state1.state)):
+                if state1.state[i] == '$':
+                    initial_boxes.append(i)
+            
+            # get the coordinates of all the boxes in the initial state
+
+            initial_boxes_coords = []
+            for box_idx in initial_boxes:
+                x, y = box_idx % self.warehouse.ncols, box_idx // self.warehouse.ncols
+                initial_boxes_coords.append((x, y))
+            
+            if self.warehouse.worker in initial_boxes_coords:
+                    
+                for box in initial_boxes_coords:
+                    if box not in self.warehouse.boxes:
+                        # then the box has been moved
+                        break
+
+                if action == "Left":
+                    new_box_coord = (box[0] - 1, box[1])
+                
+                elif action == "Right":
+                    new_box_coord = (box[0] + 1, box[1])
+                
+                elif action == "Up":
+                    new_box_coord = (box[0], box[1] - 1)
+                
+                else:
+                    new_box_coord = (box[0], box[1] + 1)
+                
+
+                # get the index of the box in the final state
+
+                new_box_idx = self.warehouse.boxes.index(new_box_coord)
+
+                # get the weight of the box
+
+                box_weight = self.warehouse.boxes_weights[new_box_idx]
+
+                return c + 1 + box_weight
+            
             else:
                 return c + 1
+                
 
 
 
-            
+                
         
         
 
