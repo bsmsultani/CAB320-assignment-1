@@ -389,7 +389,7 @@ class SokobanPuzzle(search.Problem):
 
             initial_boxes_coords = []
             for box_idx in initial_boxes:
-                x, y = box_idx % self.warehouse.ncols, box_idx // self.warehouse.ncols
+                y, x = divmod(box_idx, self.warehouse.ncols)
                 initial_boxes_coords.append((x, y))
             
             if self.warehouse.worker in initial_boxes_coords:
@@ -418,7 +418,7 @@ class SokobanPuzzle(search.Problem):
 
                 # get the weight of the box
 
-                box_weight = self.warehouse.boxes_weights[new_box_idx]
+                box_weight = self.warehouse.weights[new_box_idx]
 
                 return c + 1 + box_weight
             
@@ -575,7 +575,28 @@ if __name__ == "__main__":
 
     print(check_elem_action_seq(wh, action_sequence))
 
-    print(wh.weights)
+    
+    def visualiser(state):
+        result = ""
+
+        for i in range(0, len(state.state), wh.ncols):
+            result += state.state[i:i + wh.ncols] + "\n"
+
+        print(result)
+
+
+    ############ testing path cost function ############
+
+    visualiser(initial_state)
+
+    actions = ["Left", "Left", "Up", "Left", "Left", "Left"]
+
+    for action in actions:
+        initial_state = pz.result(initial_state, action)
+        visualiser(initial_state)
+        print(initial_state.path_cost)
+
+    
 
 """     print(pz.actions(pz.initial))
 
