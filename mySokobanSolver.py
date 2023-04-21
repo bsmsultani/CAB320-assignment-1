@@ -259,6 +259,10 @@ class SokobanPuzzle(search.Problem):
         elif action == "Down":
             y += 1
 
+        # update self.warehouse.worker to reflect the new position of the agent
+
+        self.warehouse.worker = (x, y)
+
         # now the agent's position has changed to a coordinate (x, y) based on the action taken
 
         # get the index of the new position of the agent
@@ -320,7 +324,6 @@ class SokobanPuzzle(search.Problem):
         # if the agent has not pushed a box, we can just move the agent to the new position   
         else:
             new_box_idx = None
-        
 
         # now we need to change the state string to reflect the change
 
@@ -336,7 +339,7 @@ class SokobanPuzzle(search.Problem):
             next_state = state.state[:playerposition] +  ' ' + state.state[playerposition + 1:]
             next_state = next_state[:newposition] + '@' + next_state[newposition + 1:]
         
-        
+
         # create a next node with all the information
 
         next_state = search.Node(next_state)
@@ -359,11 +362,35 @@ class SokobanPuzzle(search.Problem):
     
     
 
-    def path_cost(self, c, state1, action, state2):
+    def path_cost(self, c, state1: search.Node, action, state2: search.Node):
         '''
         Return the cost of a solution path that arrives at state2 from state1 via action, assuming cost c to get up to state1.
+
+        The cost of an action is 1 + weight of the box pushed, if any.
         '''
-        return c + 1
+
+        # if the agent is in the same position in the initial state and the final state
+        # there is no incurred cost
+        if state1.state == state2.state:
+            return c
+        
+        # if the agent has moved
+        else:
+            
+            initial_boxes = [i for i, x in enumerate(state1.state) if x == '$']
+
+            # if the agent's new position is the same position as a box in the initial state
+            # then the agent has pushed a box, therefore path cost is 1 + weight of the box
+            if self.warehouse.worker in initial_boxes:
+                pass
+            else:
+                return c + 1
+
+
+
+            
+        
+        
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -507,6 +534,8 @@ if __name__ == "__main__":
     action_sequence = ["Left", "Left", "Left", "Left", "Left", "Left"]
 
     print(check_elem_action_seq(wh, action_sequence))
+
+    print(wh.weights)
 
 """     print(pz.actions(pz.initial))
 
