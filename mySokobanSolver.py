@@ -363,13 +363,15 @@ class SokobanPuzzle(search.Problem):
     
 
     def path_cost(self, c, state1: search.Node, action, state2: search.Node):
-        '''
+
+        return c 
+
+    """ '''
         Return the cost of a solution path that arrives at state2 from state1 via action, assuming cost c to get up to state1.
 
         The cost of an action is 1 + weight of the box pushed, if any.
         '''
-            
-    
+
 
         # if the agent is in the same position in the initial state and the final state
         # there is no incurred cost
@@ -416,7 +418,7 @@ class SokobanPuzzle(search.Problem):
 
                 # get the index of the box in the final state
 
-                new_box_idx = self.warehouse.boxes.index(new_box_coord)
+                new_box_idx = self.warehouse.boxes.index(new_box_coord) 
 
                 # get the weight of the box
 
@@ -425,7 +427,7 @@ class SokobanPuzzle(search.Problem):
                 return c + 1 + box_weight
             
             else:
-                return c + 1
+                return c + 1 """
                 
     
     def h(self, n):
@@ -451,7 +453,7 @@ class SokobanPuzzle(search.Problem):
             manhattenDistance += abs(box - target)
 
         return(manhattenDistance)
-   
+
                 
         
         
@@ -600,7 +602,7 @@ if __name__ == "__main__":
     wh = sokoban.Warehouse()
 
     # CHANGE THIS TO TEST DIFFERENT WAREHOUSES, FOR EXAMPLE:
-    wh.load_warehouse("./warehouses/warehouse_8b.txt")
+    wh.load_warehouse("./warehouses/warehouse_03.txt")
 
     pz = SokobanPuzzle(wh)
 
@@ -608,14 +610,4 @@ if __name__ == "__main__":
 
     solve_weighted_sokoban(pz)
 
-    # for example lets print the list of legal moves for the initial state
-
-    print("Legal moves for the initial state:")
-
-    initial_state = pz.initial
-
-
-    action_sequence = ["Up", "Up", "Left", "Left", "Left", "Down", "Up", "Right", "Right", "Right", "Down", "Down", "Left", "Left", "Left", "Up", "Right", "Right"]
-
-    print_puzzle(initial_state)
 
