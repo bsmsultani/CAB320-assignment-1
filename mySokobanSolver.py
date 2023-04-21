@@ -382,7 +382,8 @@ class SokobanPuzzle(search.Problem):
             # if the agent's new position is the same position as a box in the initial state
             # then the agent has pushed a box, therefore path cost is 1 + weight of the box
             if self.warehouse.worker in initial_boxes:
-                pass
+                weight_idx = self.warehouse.boxes.index(self.warehouse.worker)
+                return c + 1 + self.warehouse.weights[weight_idx]
             else:
                 return c + 1
 
