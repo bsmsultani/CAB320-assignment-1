@@ -259,6 +259,10 @@ class SokobanPuzzle(search.Problem):
         elif action == "Down":
             y += 1
 
+        # update self.warehouse.worker to reflect the new position of the agent
+
+        self.warehouse.worker = (x, y)
+
         # now the agent's position has changed to a coordinate (x, y) based on the action taken
 
         # get the index of the new position of the agent
@@ -320,7 +324,6 @@ class SokobanPuzzle(search.Problem):
         # if the agent has not pushed a box, we can just move the agent to the new position   
         else:
             new_box_idx = None
-        
 
         # now we need to change the state string to reflect the change
 
@@ -336,7 +339,7 @@ class SokobanPuzzle(search.Problem):
             next_state = state.state[:playerposition] +  ' ' + state.state[playerposition + 1:]
             next_state = next_state[:newposition] + '@' + next_state[newposition + 1:]
         
-        
+
         # create a next node with all the information
 
         next_state = search.Node(next_state)
@@ -359,11 +362,75 @@ class SokobanPuzzle(search.Problem):
     
     
 
-    def path_cost(self, c, state1, action, state2):
+    def path_cost(self, c, state1: search.Node, action, state2: search.Node):
         '''
         Return the cost of a solution path that arrives at state2 from state1 via action, assuming cost c to get up to state1.
+
+        The cost of an action is 1 + weight of the box pushed, if any.
         '''
-        return c + 1
+
+        # if the agent is in the same position in the initial state and the final state
+        # there is no incurred cost
+        if state1.state == state2.state:
+            return c
+        
+        # if the agent has moved
+        else:
+            
+
+
+            # get the indexes of all the boxes in the initial state
+            initial_boxes = []
+            for i in range(len(state1.state)):
+                if state1.state[i] == '$':
+                    initial_boxes.append(i)
+            
+            # get the coordinates of all the boxes in the initial state
+
+            initial_boxes_coords = []
+            for box_idx in initial_boxes:
+                y, x = divmod(box_idx, self.warehouse.ncols)
+                initial_boxes_coords.append((x, y))
+            
+            if self.warehouse.worker in initial_boxes_coords:
+                    
+                for box in initial_boxes_coords:
+                    if box not in self.warehouse.boxes:
+                        # then the box has been moved
+                        break
+
+                if action == "Left":
+                    new_box_coord = (box[0] - 1, box[1])
+                
+                elif action == "Right":
+                    new_box_coord = (box[0] + 1, box[1])
+                
+                elif action == "Up":
+                    new_box_coord = (box[0], box[1] - 1)
+                
+                else:
+                    new_box_coord = (box[0], box[1] + 1)
+                
+
+                # get the index of the box in the final state
+
+                new_box_idx = self.warehouse.boxes.index(new_box_coord)
+
+                # get the weight of the box
+
+                box_weight = self.warehouse.weights[new_box_idx]
+
+                return c + 1 + box_weight
+            
+            else:
+                return c + 1
+                
+
+
+
+                
+        
+        
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -507,6 +574,29 @@ if __name__ == "__main__":
     action_sequence = ["Left", "Left", "Left", "Left", "Left", "Left"]
 
     print(check_elem_action_seq(wh, action_sequence))
+
+    
+    def visualiser(state):
+        result = ""
+
+        for i in range(0, len(state.state), wh.ncols):
+            result += state.state[i:i + wh.ncols] + "\n"
+
+        print(result)
+
+
+    ############ testing path cost function ############
+
+    visualiser(initial_state)
+
+    actions = ["Left", "Left", "Up", "Left", "Left", "Left"]
+
+    for action in actions:
+        initial_state = pz.result(initial_state, action)
+        visualiser(initial_state)
+        print(initial_state.path_cost)
+
+    
 
 """     print(pz.actions(pz.initial))
 
