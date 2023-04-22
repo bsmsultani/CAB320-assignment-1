@@ -1,7 +1,7 @@
 
 '''
 
-    Sokoban assignment
+Sokoban assignment
 
 
 The functions and classes defined in this module will be called by a marker script. 
@@ -31,6 +31,7 @@ Last modified by 2022-03-27  by f.maire@qut.edu.au
 # with these files
 import search 
 import sokoban
+
 
 
 
@@ -167,7 +168,7 @@ class SokobanPuzzle(search.Problem):
         str_warehouse = warehouse.__str__().replace('\n', '')
         initial = str_warehouse
         
-        goal = initial.replace('$', ' ').replace('.', '$').replace('@', ' ')
+        goal = initial.replace('$', ' ').replace('.', '*').replace('@', ' ')
 
         super().__init__(search.Node(initial), search.Node(goal))
 
@@ -187,11 +188,13 @@ class SokobanPuzzle(search.Problem):
         # returns the coordinate of the agent in the current state        
         y, x = divmod(playerposition, self.warehouse.ncols)
 
+        previousPlayerPosition = (x, y)
+
         # for debugging, self.warehouse.worker is the coordinate of the agent in the initial state
         # x, y = self.warehouse.worker
         # see more by running the code and seeing __name__ == "__main__" below 
-        print(self.warehouse.worker)
-        print(x, y)
+        #print(self.warehouse.worker)
+        #print(x, y)
 
         # generate a list of legal moves (it can go anywhere expect into the walls)
 
@@ -242,6 +245,8 @@ class SokobanPuzzle(search.Problem):
 
         y, x = divmod(playerposition, self.warehouse.ncols)
 
+        previousPlayerPosition = (x, y)
+
         # if action is left, move the agent to the left
 
         if action == "Left":
@@ -267,7 +272,7 @@ class SokobanPuzzle(search.Problem):
 
         # get the index of the new position of the agent
 
-        newposition = y * self.warehouse.ncols + x
+        newplayerposition = y * self.warehouse.ncols + x
 
         # now we need to check if the agent has pushed a box
 
@@ -314,7 +319,7 @@ class SokobanPuzzle(search.Problem):
                 if (x, y + 1) not in self.warehouse.walls and (x, y + 1) not in self.warehouse.boxes:
                     new_box_idx = ((y + 1) * self.warehouse.ncols + x)
                     box_to_update = self.warehouse.boxes.index((x, y))
-                    self.warehouse.boxes[box_to_update] = (x, y + + 1)
+                    self.warehouse.boxes[box_to_update] = (x, y + 1)
                 else:
                     new_box_idx = None
 
@@ -325,19 +330,55 @@ class SokobanPuzzle(search.Problem):
         else:
             new_box_idx = None
 
-        # now we need to change the state string to reflect the change
 
+        # now we need to change the state string to reflect the change
 
         # if the agent has pushed a box, we need to change the state string to reflect the change
 
         if new_box_idx is not None:
-            next_state = state.state[:playerposition] + ' ' + state.state[playerposition + 1:]
-            next_state = next_state[:newposition] + '@' + next_state[newposition + 1:]
-            next_state = next_state[:new_box_idx] + '$' + next_state[new_box_idx + 1:]
+
+            #Check if the move has uncovered a target or if player has stepped off a target
+            if previousPlayerPosition in wh.targets and wh.worker != previousPlayerPosition:
+                #if they have moved then we need to highkight the space is open again
+                next_state = state.state[:playerposition] + '.' + state.state[playerposition + 1:]
+            else:
+                #else its just an empty space
+                next_state = state.state[:playerposition] + ' ' + state.state[playerposition + 1:]
+
+            next_state = next_state[:newplayerposition] + '@' + next_state[newplayerposition + 1:]
+
+            #Check if a box has been pushed into an open slot and change the symbol
+            y, x = divmod(new_box_idx, self.warehouse.ncols)
+            boxPosition = (x,y)
+
+            if boxPosition in wh.targets:
+                next_state = next_state[:new_box_idx] + '*' + next_state[new_box_idx + 1:]
+            else:
+                next_state = next_state[:new_box_idx] + '$' + next_state[new_box_idx + 1:]
         
         else: 
-            next_state = state.state[:playerposition] +  ' ' + state.state[playerposition + 1:]
-            next_state = next_state[:newposition] + '@' + next_state[newposition + 1:]
+            if previousPlayerPosition in wh.targets and wh.worker != previousPlayerPosition:
+               next_state = state.state[:playerposition] + '.' + state.state[playerposition + 1:]
+            else:
+                next_state = state.state[:playerposition] +  ' ' + state.state[playerposition + 1:]
+
+            next_state = next_state[:newplayerposition] + '@' + next_state[newplayerposition + 1:]
+
+
+
+        """#Check if the move has uncovered a target or if player has stepped off a target
+            if overlapped_targets:
+                for target in overlapped_targets:
+
+                    #get targets position
+                    targetposition = target[1] * self.warehouse.ncols + target[0]
+
+                    next_state = next_state[:targetposition] +  '*' + next_state[targetposition + 1:]
+
+            overlapped_targets = [target for target in wh.targets if target in wh.worker or target in wh.boxes]
+
+            
+        print(overlapped_targets) """
         
 
         # create a next node with all the information
@@ -356,9 +397,11 @@ class SokobanPuzzle(search.Problem):
         Return True if the state is a goal state or False, otherwise.
         '''
 
-        # we position of the agent in the current state is irrelevant
+        teststate = state.state
 
-        return state.state == self.goal.state
+        if teststate == self.goal:
+            return True    
+
     
     
 
@@ -436,6 +479,7 @@ class SokobanPuzzle(search.Problem):
         '''
 
         warehouse = self.warehouse
+        
         
 
         boxes = warehouse.boxes
@@ -536,7 +580,7 @@ def check_elem_action_seq(warehouse: sokoban.Warehouse, action_seq):
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-def solve_weighted_sokoban(puzzle: SokobanPuzzle):
+def solve_weighted_sokoban(warehouse):
     '''
     This function analyses the given warehouse.
     It returns the two items. The first item is an action sequence solution. 
@@ -559,10 +603,22 @@ def solve_weighted_sokoban(puzzle: SokobanPuzzle):
             C is the total cost of the action sequence C
 
     '''
-    
-    sol = search.astar_graph_search(puzzle)
+
+    pz = SokobanPuzzle(warehouse)
+
+    print_puzzle(pz.initial)
+
+    actionsequence = ['Right']
+    state = pz.initial
+
+    for action in actionsequence:
+        state = pz.result(state, action)
+        print_puzzle(state)
+
+    sol = search.astar_graph_search(pz)
 
     if sol:
+        print_puzzle(sol.state)
         return "A solution was found"
 
 
@@ -583,12 +639,6 @@ def print_puzzle(state):
 
     print(result)
 
-
-
-
-    
-
-
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
@@ -602,12 +652,25 @@ if __name__ == "__main__":
     wh = sokoban.Warehouse()
 
     # CHANGE THIS TO TEST DIFFERENT WAREHOUSES, FOR EXAMPLE:
-    wh.load_warehouse("./warehouses/warehouse_03.txt")
+    wh.load_warehouse("./warehouses/warehouse_09.txt")
 
-    pz = SokobanPuzzle(wh)
+    solve_weighted_sokoban(wh)
+
 
     #Solve
 
-    solve_weighted_sokoban(pz)
+    """ actionsequence = ['Up', 'Up', 'Left', 'Down', 'Right', 'Down', 'Left', 'Left', 'Left', 'Left', 'Right', 'Right']
+
+    state = pz.initial
+
+    for action in actionsequence:
+        state = pz.result(state, action)
+        print_puzzle(state)
+ """
+
+
+
+
+    
 
 
