@@ -249,154 +249,59 @@ class SokobanPuzzle(search.Problem):
 
         '''
 
-        # if action not in self.actions(state):
-        #     raise Exception("Illegal action")
+        #Move the player based on the action
 
-        print_puzzle(state)
-        
-        # index of the @ symbol in the state string
+        #To move the player we need to get the players current position
+        playerCordinates = self.warehouse.worker
+        playerPreviousPositionStr = state.state.index('@')
 
-        playerposition = state.state.index('@')
-
-        # returns the coordinate of the agent in the current state
-
-        y, x = divmod(playerposition, self.warehouse.ncols)
-
-        previousPlayerPosition = (x, y)
-
-        # if action is left, move the agent to the left
-
+        #Check which action was called
         if action == "Left":
-            x -= 1
-            
-        # if action is right, move the agent to the right
+            #Update the players position
+            playerCordinates = (playerCordinates[0] - 1, playerCordinates[1])
 
         elif action == "Right":
-            x += 1
-
+            playerCordinates = (playerCordinates[0] + 1, playerCordinates[1])
         elif action == "Up":
-            y -= 1
-        
+            playerCordinates = (playerCordinates[0], playerCordinates[1] + 1)
         elif action == "Down":
-            y += 1
-
-        # update self.warehouse.worker to reflect the new position of the agent
+            playerCordinates = (playerCordinates[0], playerCordinates[1] - 1)
 
 
+        currentState = state.state
+        nextState = None
 
-        # now the agent's position has changed to a coordinate (x, y) based on the action taken
+        #Convert the cordinates into a string position so we can update the text reprsentation
+        playerPositionStr = playerCordinates[1] * self.warehouse.ncols * playerCordinates[0]
 
-        # get the index of the new position of the agent
-
-        newplayerposition = y * self.warehouse.ncols + x
-
-        # now we need to check if the agent has pushed a box
-
-        # if the agent has pushed a box, we need to change the state string to reflect the change
-
-        #store taboo cells
-        taboo_cells(self.warehouse)
-
-        if (x, y) in self.warehouse.boxes:
-
-            # if the agent pushes a box to the left, we need to check if the box can move to the left
-
-            if action == "Left":
-
-                # the agent can only push the box to the left if there is no wall to the left of the box and there is no box to the left of the box and the agent is not pushing the box into a taboo cell
-
-                if (x - 1, y) not in self.warehouse.walls and (x - 1, y) not in self.warehouse.boxes and (x - 1, y) not in taboocells:
-                    new_box_idx = (y * self.warehouse.ncols + x - 1)      
-                    self.warehouse.worker = (x, y)
-                    #Update warehouse to reflect the box has move
-                    box_to_update = self.warehouse.boxes.index((x, y)) #find the specific box that needs to be updated be checking which box has the current player's cordinators, as the player has already moved into a box
-                    self.warehouse.boxes[box_to_update] = (x - 1, y) #update the boxes position with its new position
-                else: #We can have a case where a box is "pushed" but is against a wall and therefore does not move. In this case we need to set the new_box_idx to be none or we will trigger a later condition (line 322) which updates state when a box has not actually been move
-                    new_box_idx = None
-                    newplayerposition = playerposition 
-            
-            elif action == "Right":
-                if (x + 1, y) not in self.warehouse.walls and (x + 1, y) not in self.warehouse.boxes and (x + 1, y) not in taboocells:
-                    new_box_idx = (y * self.warehouse.ncols + x + 1)
-                    self.warehouse.worker = (x, y)
-                    box_to_update = self.warehouse.boxes.index((x, y))
-                    self.warehouse.boxes[box_to_update] = (x + 1, y)
-                else:
-                    new_box_idx = None
-                    newplayerposition = playerposition
-                
-            elif action == "Up":
-                if (x, y - 1) not in self.warehouse.walls and (x, y - 1) not in self.warehouse.boxes and (x, y - 1) not in taboocells:
-                    new_box_idx = ((y - 1) * self.warehouse.ncols + x)
-                    self.warehouse.worker = (x, y)
-                    box_to_update = self.warehouse.boxes.index((x, y))
-                    self.warehouse.boxes[box_to_update] = (x, y - 1)
-                else:
-                    new_box_idx = None
-                    newplayerposition = playerposition
-
-            elif action == "Down":
-                if (x, y + 1) not in self.warehouse.walls and (x, y + 1) not in self.warehouse.boxes and (x, y + 1) not in taboocells:
-                    new_box_idx = ((y + 1) * self.warehouse.ncols + x)
-                    self.warehouse.worker = (x, y)
-                    box_to_update = self.warehouse.boxes.index((x, y))
-                    self.warehouse.boxes[box_to_update] = (x, y + 1)
-                else:
-                    new_box_idx = None
-                    newplayerposition = playerposition
-
-            else:
-                raise Exception("Illegal action")
-
-        # if the agent has not pushed a box, we can just move the agent to the new position   
-        else:
-            self.warehouse.worker = (x, y)
-            new_box_idx = None
+        nextState = currentState[:playerPreviousPositionStr] + ' ' + currentState[playerPositionStr + 1:]
+        nextState = nextState[:playerPositionStr] + '@' + nextState[playerPositionStr + 1:]
 
 
-        # now we need to change the state string to reflect the change
+        newNode = search.Node(nextState)
+        newNode.parent = currentState
+        newNode.path_cost = 1
 
-        # if the agent has pushed a box, we need to change the state string to reflect the change
+        return newNode 
 
-        if new_box_idx is not None:
-
-            #Check if the move has uncovered a target or if player has stepped off a target
-            if previousPlayerPosition in wh.targets and wh.worker != previousPlayerPosition:
-                #if they have moved then we need to highkight the space is open again
-                next_state = state.state[:playerposition] + '.' + state.state[playerposition + 1:]
-            else:
-                #else its just an empty space
-                next_state = state.state[:playerposition] + ' ' + state.state[playerposition + 1:]
-
-            next_state = next_state[:newplayerposition] + '@' + next_state[newplayerposition + 1:]
-
-            #Check if a box has been pushed into an open slot and change the symbol
-            y, x = divmod(new_box_idx, self.warehouse.ncols)
-            boxPosition = (x,y)
-
-            if boxPosition in wh.targets:
-                next_state = next_state[:new_box_idx] + '*' + next_state[new_box_idx + 1:]
-            else:
-                next_state = next_state[:new_box_idx] + '$' + next_state[new_box_idx + 1:]
         
-        else: 
-            if previousPlayerPosition in wh.targets and wh.worker != previousPlayerPosition:
-               next_state = state.state[:playerposition] + '.' + state.state[playerposition + 1:]
-            else:
-                next_state = state.state[:playerposition] +  ' ' + state.state[playerposition + 1:]
 
-            next_state = next_state[:newplayerposition] + '@' + next_state[newplayerposition + 1:]
 
-    
-        # create a next node with all the information
-
-        next_state = search.Node(next_state)
-        next_state.parent = state
-        next_state.action = action
-        next_state.path_cost = self.path_cost(state.path_cost, state, action, next_state)
         
         
-        return next_state
+
+
+
+
+
+
+
+        
+
+
+
+
+        
 
 
     def goal_test(self, node: search.Node):
@@ -653,7 +558,21 @@ if __name__ == "__main__":
     # CHANGE THIS TO TEST DIFFERENT WAREHOUSES, FOR EXAMPLE:
     wh.load_warehouse("./warehouses/warehouse_01.txt")
 
-    solve_weighted_sokoban(wh)
+    pz = SokobanPuzzle(wh)
+
+    actions = pz.actions(pz.initial)
+
+    state = pz.initial
+
+    actionSequence = ["Left"]
+
+    print_puzzle(state)
+
+    for action in actionSequence:
+        state = pz.result(state, action)
+        print_puzzle(state)
+
+   
 
 
     #Solve
