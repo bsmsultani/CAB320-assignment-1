@@ -387,23 +387,7 @@ class SokobanPuzzle(search.Problem):
 
             next_state = next_state[:newplayerposition] + '@' + next_state[newplayerposition + 1:]
 
-
-
-        """#Check if the move has uncovered a target or if player has stepped off a target
-            if overlapped_targets:
-                for target in overlapped_targets:
-
-                    #get targets position
-                    targetposition = target[1] * self.warehouse.ncols + target[0]
-
-                    next_state = next_state[:targetposition] +  '*' + next_state[targetposition + 1:]
-
-            overlapped_targets = [target for target in wh.targets if target in wh.worker or target in wh.boxes]
-
-            
-        print(overlapped_targets) """
-        
-
+    
         # create a next node with all the information
 
         next_state = search.Node(next_state)
@@ -501,11 +485,9 @@ class SokobanPuzzle(search.Problem):
     def h(self, n):
         '''
         A simple heuristic which calculates the Manhatten Distance between the boxes and targets for each state
-        '''
+        
 
         warehouse = self.warehouse
-        
-        
 
         boxes = warehouse.boxes
         targets = warehouse.targets
@@ -522,7 +504,9 @@ class SokobanPuzzle(search.Problem):
             manhattenDistance += abs(box - target)
 
         return(manhattenDistance)
+        '''
 
+        return 1
                 
         
         
@@ -555,8 +539,6 @@ def check_elem_action_seq(warehouse: sokoban.Warehouse, action_seq):
 
 
     ## Situations which are illegal: Box in wall, pushing 2 boxes, player in wall, player in a box
-
-
 
     walls = warehouse.walls
 
