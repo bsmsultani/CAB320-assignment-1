@@ -32,7 +32,7 @@ Last modified by 2022-03-27  by f.maire@qut.edu.au
 import search 
 import sokoban
 
-
+taboocells = []
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -75,6 +75,8 @@ def taboo_cells(warehouse: sokoban.Warehouse):
        and the boxes.  
     '''
 
+    global taboocells
+
     walls = warehouse.walls
 
     max_x, max_y = max(walls)
@@ -109,19 +111,32 @@ def taboo_cells(warehouse: sokoban.Warehouse):
 
     # corners are cells that are inside cells and have a wall on either side
     
-    corners = []
+    taboocells = []
     for x, y in inside_cells:
-        if (x - 1, y) in walls and (x, y - 1) in walls:
-            corners.append((x, y))
-        elif (x + 1, y) in walls and (x, y - 1) in walls:
-            corners.append((x, y))
-        elif (x - 1, y) in walls and (x, y + 1) in walls:
-            corners.append((x, y))
-        elif (x + 1, y) in walls and (x, y + 1) in walls:
-            corners.append((x, y))
-    
+        if (x, y) not in warehouse.targets:
+            if (x - 1, y) in walls and (x, y - 1) in walls:
+                taboocells.append((x, y))
+            elif (x + 1, y) in walls and (x, y - 1) in walls:
+                taboocells.append((x, y))
+            elif (x - 1, y) in walls and (x, y + 1) in walls:
+                taboocells.append((x, y))
+            elif (x + 1, y) in walls and (x, y + 1) in walls:
+                taboocells.append((x, y))
+        
 
-    return corners
+    #Prints a string representation of taboo cells
+    pz = SokobanPuzzle(warehouse)
+
+    state = pz.initial
+
+    for corner in taboocells:
+        x_position = corner[1] * warehouse.ncols + corner[0]
+
+        state.state = state.state[:x_position] + 'x' + state.state[x_position + 1:]
+
+    state.state = state.state.replace('$', ' ').replace('.', ' ').replace('*', ' ')
+
+    return state.state
 
         
         
@@ -236,6 +251,8 @@ class SokobanPuzzle(search.Problem):
 
         # if action not in self.actions(state):
         #     raise Exception("Illegal action")
+
+        print_puzzle(state)
         
         # index of the @ symbol in the state string
 
@@ -252,7 +269,6 @@ class SokobanPuzzle(search.Problem):
         if action == "Left":
             x -= 1
             
-        
         # if action is right, move the agent to the right
 
         elif action == "Right":
@@ -266,7 +282,7 @@ class SokobanPuzzle(search.Problem):
 
         # update self.warehouse.worker to reflect the new position of the agent
 
-        self.warehouse.worker = (x, y)
+
 
         # now the agent's position has changed to a coordinate (x, y) based on the action taken
 
@@ -278,56 +294,63 @@ class SokobanPuzzle(search.Problem):
 
         # if the agent has pushed a box, we need to change the state string to reflect the change
 
+        #store taboo cells
+        taboo_cells(self.warehouse)
+
         if (x, y) in self.warehouse.boxes:
 
             # if the agent pushes a box to the left, we need to check if the box can move to the left
 
             if action == "Left":
 
-                # the agent can only push the box to the left if there is no wall to the left of the box and there is no box to the left of the box
+                # the agent can only push the box to the left if there is no wall to the left of the box and there is no box to the left of the box and the agent is not pushing the box into a taboo cell
 
-                if (x - 1, y) not in self.warehouse.walls and (x - 1, y) not in self.warehouse.boxes:
+                if (x - 1, y) not in self.warehouse.walls and (x - 1, y) not in self.warehouse.boxes and (x - 1, y) not in taboocells:
                     new_box_idx = (y * self.warehouse.ncols + x - 1)      
-                    
+                    self.warehouse.worker = (x, y)
                     #Update warehouse to reflect the box has move
                     box_to_update = self.warehouse.boxes.index((x, y)) #find the specific box that needs to be updated be checking which box has the current player's cordinators, as the player has already moved into a box
                     self.warehouse.boxes[box_to_update] = (x - 1, y) #update the boxes position with its new position
                 else: #We can have a case where a box is "pushed" but is against a wall and therefore does not move. In this case we need to set the new_box_idx to be none or we will trigger a later condition (line 322) which updates state when a box has not actually been move
                     new_box_idx = None
+                    newplayerposition = playerposition 
             
             elif action == "Right":
-
-                if (x + 1, y) not in self.warehouse.walls and (x + 1, y) not in self.warehouse.boxes:
+                if (x + 1, y) not in self.warehouse.walls and (x + 1, y) not in self.warehouse.boxes and (x + 1, y) not in taboocells:
                     new_box_idx = (y * self.warehouse.ncols + x + 1)
+                    self.warehouse.worker = (x, y)
                     box_to_update = self.warehouse.boxes.index((x, y))
                     self.warehouse.boxes[box_to_update] = (x + 1, y)
                 else:
                     new_box_idx = None
+                    newplayerposition = playerposition
                 
             elif action == "Up":
-                    
-                if (x, y - 1) not in self.warehouse.walls and (x, y - 1) not in self.warehouse.boxes:
+                if (x, y - 1) not in self.warehouse.walls and (x, y - 1) not in self.warehouse.boxes and (x, y - 1) not in taboocells:
                     new_box_idx = ((y - 1) * self.warehouse.ncols + x)
+                    self.warehouse.worker = (x, y)
                     box_to_update = self.warehouse.boxes.index((x, y))
                     self.warehouse.boxes[box_to_update] = (x, y - 1)
                 else:
                     new_box_idx = None
-
+                    newplayerposition = playerposition
 
             elif action == "Down":
-                    
-                if (x, y + 1) not in self.warehouse.walls and (x, y + 1) not in self.warehouse.boxes:
+                if (x, y + 1) not in self.warehouse.walls and (x, y + 1) not in self.warehouse.boxes and (x, y + 1) not in taboocells:
                     new_box_idx = ((y + 1) * self.warehouse.ncols + x)
+                    self.warehouse.worker = (x, y)
                     box_to_update = self.warehouse.boxes.index((x, y))
                     self.warehouse.boxes[box_to_update] = (x, y + 1)
                 else:
                     new_box_idx = None
+                    newplayerposition = playerposition
 
             else:
                 raise Exception("Illegal action")
 
         # if the agent has not pushed a box, we can just move the agent to the new position   
         else:
+            self.warehouse.worker = (x, y)
             new_box_idx = None
 
 
@@ -392,12 +415,14 @@ class SokobanPuzzle(search.Problem):
         return next_state
 
 
-    def goal_test(self, state: search.Node):
+    def goal_test(self, node: search.Node):
         '''
         Return True if the state is a goal state or False, otherwise.
         '''
 
-        teststate = state.state
+        teststate = node.state
+
+        teststate = teststate.replace('@', ' ')
 
         if teststate == self.goal:
             return True    
@@ -604,17 +629,8 @@ def solve_weighted_sokoban(warehouse):
 
     '''
 
-    pz = SokobanPuzzle(warehouse)
-
-    print_puzzle(pz.initial)
-
-    actionsequence = ['Right']
-    state = pz.initial
-
-    for action in actionsequence:
-        state = pz.result(state, action)
-        print_puzzle(state)
-
+    pz = SokobanPuzzle(warehouse)    
+    
     sol = search.astar_graph_search(pz)
 
     if sol:
@@ -639,6 +655,7 @@ def print_puzzle(state):
 
     print(result)
 
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
@@ -652,7 +669,7 @@ if __name__ == "__main__":
     wh = sokoban.Warehouse()
 
     # CHANGE THIS TO TEST DIFFERENT WAREHOUSES, FOR EXAMPLE:
-    wh.load_warehouse("./warehouses/warehouse_09.txt")
+    wh.load_warehouse("./warehouses/warehouse_01.txt")
 
     solve_weighted_sokoban(wh)
 
