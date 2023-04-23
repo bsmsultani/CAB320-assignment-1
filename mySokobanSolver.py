@@ -259,7 +259,6 @@ class SokobanPuzzle(search.Problem):
         if action == "Left":
             #Update the players position
             playerCordinates = (playerCordinates[0] - 1, playerCordinates[1])
-
         elif action == "Right":
             playerCordinates = (playerCordinates[0] + 1, playerCordinates[1])
         elif action == "Up":
@@ -272,34 +271,19 @@ class SokobanPuzzle(search.Problem):
         nextState = None
 
         #Convert the cordinates into a string position so we can update the text reprsentation
-        playerPositionStr = playerCordinates[1] * self.warehouse.ncols * playerCordinates[0]
+        playerPositionStr = playerCordinates[1] * self.warehouse.ncols + playerCordinates[0]
 
-        nextState = currentState[:playerPreviousPositionStr] + ' ' + currentState[playerPositionStr + 1:]
+        #update state to reflect next state
+        nextState = currentState[:playerPreviousPositionStr] + ' ' + currentState[playerPreviousPositionStr + 1:]
         nextState = nextState[:playerPositionStr] + '@' + nextState[playerPositionStr + 1:]
 
 
+
         newNode = search.Node(nextState)
-        newNode.parent = currentState
+        newNode.parent = state
         newNode.path_cost = 1
 
         return newNode 
-
-        
-
-
-        
-        
-
-
-
-
-
-
-
-        
-
-
-
 
         
 
@@ -564,7 +548,7 @@ if __name__ == "__main__":
 
     state = pz.initial
 
-    actionSequence = ["Left"]
+    actionSequence = ["Left", "Right"]
 
     print_puzzle(state)
 
