@@ -26,6 +26,7 @@ https://docs.python.org/3/library/collections.abc.html
 
 import sys
 
+
 # check the Python version is at least 3.5
 assert sys.version_info >= (3, 5)
 
@@ -477,6 +478,8 @@ def astar_tree_search(problem, h=None):
     else in your Problem subclass."""
     h = memoize(h or problem.h, slot='h')
     return best_first_tree_search(problem, lambda n: n.path_cost + h(n))
+
+
 
 #______________________________________________________________________________
 #
