@@ -433,14 +433,27 @@ class SokobanPuzzle(search.Problem):
     
 
     def path_cost(self, c, state1: search.Node, action, state2: search.Node):
-
-        return c 
-
-    """ '''
+    
+        '''
         Return the cost of a solution path that arrives at state2 from state1 via action, assuming cost c to get up to state1.
 
         The cost of an action is 1 + weight of the box pushed, if any.
         '''
+
+        def get_box_cordinates(state):
+                
+                boxCordinates = []
+    
+                for i in range(len(state.state)):
+                    if state.state[i] == '$':
+                        y, x = divmod(i, self.warehouse.ncols)
+                        boxCordinates.append((x, y))
+                
+                return boxCordinates
+        
+
+        state1_boxes = get_box_cordinates(state1)
+        state2_boxes = get_box_cordinates(state2)
 
 
         # if the agent is in the same position in the initial state and the final state
@@ -451,53 +464,11 @@ class SokobanPuzzle(search.Problem):
         # if the agent has moved
         else:
             
+            print("state1: ", state1_boxes)
+            print("state2: ", state2_boxes)
 
+            return c
 
-            # get the indexes of all the boxes in the initial state
-            initial_boxes = []
-            for i in range(len(state1.state)):
-                if state1.state[i] == '$':
-                    initial_boxes.append(i)
-            
-            # get the coordinates of all the boxes in the initial state
-
-            initial_boxes_coords = []
-            for box_idx in initial_boxes:
-                y, x = divmod(box_idx, self.warehouse.ncols)
-                initial_boxes_coords.append((x, y))
-            
-            if self.warehouse.worker in initial_boxes_coords:
-                    
-                for box in initial_boxes_coords:
-                    if box not in self.warehouse.boxes:
-                        # then the box has been moved
-                        break
-
-                if action == "Left":
-                    new_box_coord = (box[0] - 1, box[1])
-                
-                elif action == "Right":
-                    new_box_coord = (box[0] + 1, box[1])
-                
-                elif action == "Up":
-                    new_box_coord = (box[0], box[1] - 1)
-                
-                else:
-                    new_box_coord = (box[0], box[1] + 1)
-                
-
-                # get the index of the box in the final state
-
-                new_box_idx = self.warehouse.boxes.index(new_box_coord) 
-
-                # get the weight of the box
-
-                box_weight = self.warehouse.weights[new_box_idx]
-
-                return c + 1 + box_weight
-            
-            else:
-                return c + 1 """
                 
     
     def h(self, n):
@@ -618,11 +589,7 @@ def check_elem_action_seq(warehouse: sokoban.Warehouse, action_seq):
 
         if playerposition in walls or playerposition in boxes:
             return "Impossible"
-            
-        
-            
-    print_puzzle(state)
-        
+                    
 
 
 
@@ -657,10 +624,8 @@ def solve_weighted_sokoban(warehouse):
     sol = search.astar_graph_search(pz)
 
     if sol:
-        #S = pz.initial.solution
-        #C = sol.path_cost
-        #return S, C
         print("Solution found")
+        return sol.solution(), sol.path_cost
     else:
         return "Impossible"
 
@@ -677,8 +642,8 @@ def print_puzzle(state):
     '''
     result = ""
 
-    for i in range(0, len(state), wh.ncols):
-        result += state[i:i + wh.ncols] + "\n"
+    for i in range(0, len(state.state), wh.ncols):
+        result += state.state[i:i + wh.ncols] + "\n"
 
     print(result)
 
@@ -697,11 +662,10 @@ if __name__ == "__main__":
 
     # CHANGE THIS TO TEST DIFFERENT WAREHOUSES, FOR EXAMPLE:
 
-    wh.load_warehouse("./warehouses/warehouse_09.txt")
+    wh.load_warehouse("./warehouses/warehouse_147.txt")
 
     pz = SokobanPuzzle(wh)
   
-    print_puzzle(taboo_cells(wh))
 
     #Solve
     print(solve_weighted_sokoban(wh))
