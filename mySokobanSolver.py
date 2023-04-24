@@ -48,6 +48,8 @@ def my_team():
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
+taboocells = []
+
 def taboo_cells(warehouse: sokoban.Warehouse):
     '''  
     Identify the taboo cells of a warehouse. A "taboo cell" is by definition
@@ -74,6 +76,8 @@ def taboo_cells(warehouse: sokoban.Warehouse):
        and the boxes.  
     '''
 
+    global taboocells
+
     walls = warehouse.walls
 
     max_x, max_y = max(walls)
@@ -99,28 +103,64 @@ def taboo_cells(warehouse: sokoban.Warehouse):
         if y > max(columns[x]) or y < min(columns[x]):
             outside_cells.add((x, y))
 
-    
-    
-
     # inside cells are cells that are not outside cells
 
     inside_cells = [cell for cell in non_walls if cell not in outside_cells]
 
-    # corners are cells that are inside cells and have a wall on either side
-    
-    corners = []
-    for x, y in inside_cells:
-        if (x - 1, y) in walls and (x, y - 1) in walls:
-            corners.append((x, y))
-        elif (x + 1, y) in walls and (x, y - 1) in walls:
-            corners.append((x, y))
-        elif (x - 1, y) in walls and (x, y + 1) in walls:
-            corners.append((x, y))
-        elif (x + 1, y) in walls and (x, y + 1) in walls:
-            corners.append((x, y))
-    
+    # corners are cells that are inside cells and have a wall on two sides
+    # that is a wall on the left and right or a wall on the top and bottom
+    # and are not target cells
 
-    return corners
+    corners = []
+    
+    for (x, y) in inside_cells:
+        if (x, y) not in warehouse.targets:
+            if (x - 1, y) in walls and (x, y - 1) in walls:
+                corners.append((x, y))
+                taboocells.append((x, y))
+            elif (x + 1, y) in walls and (x, y - 1) in walls:
+                corners.append((x, y))
+                taboocells.append((x, y))
+            elif (x - 1, y) in walls and (x, y + 1) in walls:
+                corners.append((x, y))
+                taboocells.append((x, y))
+            elif (x + 1, y) in walls and (x, y + 1) in walls:
+                corners.append((x, y))
+                taboocells.append((x, y))
+
+    # two corners along a wall have taboo cells between them if none of the cells are target cells
+    # and there is a wall on either side of the cells
+    
+    # for every ith corner, check the entire list if there is a corner with the same x-coordinate, which means they are on the same row
+    for i in range(len(corners)):
+        for j in range(len(corners)):
+            if corners[i][0] == corners[j][0]:
+                # if they are on the same row, check if there are any cells between them that are not target cells
+                # and if there is a wall on either side of the cell. If there is, then that cell is a taboo cell
+                for y in range(corners[i][1] + 1, corners[j][1]):
+                    if (corners[i][0], y) not in warehouse.targets:
+                        if (corners[i][0] - 1, y) in walls or (corners[i][0] + 1, y) in walls:
+                            taboocells.append((corners[i][0], y))
+
+            # if they are on the same column, check if there are any cells between them that are not target cells
+            # and if there is a wall on either side of the cell. If there is, then that cell is a taboo cell
+            elif corners[i][1] == corners[j][1]:
+                for x in range(corners[i][0] + 1, corners[j][0]):
+                    if (x, corners[i][1]) not in warehouse.targets:
+                        # if there is a wall on either side
+                        if (x, corners[i][1] - 1) in walls or (x, corners[i][1] + 1) in walls:
+                            taboocells.append((x, corners[i][1]))
+
+
+    warehouse_string = warehouse.__str__().replace('\n', '')
+
+    for taboocell in taboocells:
+        pos = taboocell[1] * warehouse.ncols + taboocell[0]
+
+        warehouse_string = warehouse_string[:pos] + 'X' + warehouse_string[pos + 1:]
+
+
+    return warehouse_string
 
         
         
@@ -542,8 +582,8 @@ def solve_weighted_sokoban(warehouse):
 def print_puzzle(state):
     result = ""
 
-    for i in range(0, len(state.state), wh.ncols):
-        result += state.state[i:i + wh.ncols] + "\n"
+    for i in range(0, len(state), wh.ncols):
+        result += state[i:i + wh.ncols] + "\n"
 
     print(result)
 
@@ -561,81 +601,9 @@ if __name__ == "__main__":
     wh = sokoban.Warehouse()
 
     # CHANGE THIS TO TEST DIFFERENT WAREHOUSES, FOR EXAMPLE:
-    wh.load_warehouse("./warehouses/warehouse_8b.txt")
+    wh.load_warehouse("./warehouses/warehouse_11.txt")
 
-    pz = SokobanPuzzle(wh)
-
-    # for example lets print the list of legal moves for the initial state
-
-    print("Legal moves for the initial state:")
-
-    initial_state = pz.initial
-
-    action_sequence = ["Left", "Left", "Left", "Left", "Left", "Left"]
-
-    print(check_elem_action_seq(wh, action_sequence))
-
-    
-    def visualiser(state):
-        result = ""
-
-        for i in range(0, len(state.state), wh.ncols):
-            result += state.state[i:i + wh.ncols] + "\n"
-
-        print(result)
+    print(wh)
 
 
-    ############ testing path cost function ############
-
-    visualiser(initial_state)
-
-    actions = ["Left", "Left", "Up", "Left", "Left", "Left"]
-
-    for action in actions:
-        initial_state = pz.result(initial_state, action)
-        visualiser(initial_state)
-        print(initial_state.path_cost)
-
-    
-
-"""     print(pz.actions(pz.initial))
-
-    result = ""
-
-    for i in range(0, len(initial_state.state), wh.ncols):
-        result += initial_state.state[i:i + wh.ncols] + "\n"
-
-    print(result)
-
-    # you can change the action for the initial state to see the result which is the new state
-    # as you can move the agent to the left, right, up or down
-
-    x = pz.result(pz.initial, "Left")
-
-    # add the new lines to make the output more readable
-
-    result = ""
-
-    for i in range(0, len(x.state), wh.ncols):
-        result += x.state[i:i + wh.ncols] + "\n"
-
-    print(result)
-
-    print(pz.actions(x))
-    x = pz.result(x, "Up")
-
-    result = ""
-
-    for i in range(0, len(x.state), wh.ncols):
-        result += x.state[i:i + wh.ncols] + "\n"
-
-    print(result)
-    print(pz.actions(x))
-    x = pz.result(x, "Down")
-
-    result = ""
-
-    for i in range(0, len(x.state), wh.ncols):
-        result += x.state[i:i + wh.ncols] + "\n"
-
-    print(result) """
+    print_puzzle(taboo_cells(wh))
