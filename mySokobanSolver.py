@@ -111,7 +111,6 @@ def taboo_cells(warehouse: sokoban.Warehouse):
 
     # corners are cells that are inside cells and have a wall on either side
     
-    taboocells = []
     for x, y in inside_cells:
         if (x, y) not in warehouse.targets:
             if (x - 1, y) in walls and (x, y - 1) in walls:
@@ -249,11 +248,14 @@ class SokobanPuzzle(search.Problem):
 
         '''
 
+
         #Move the player based on the action
 
         #To move the player we need to get the players current position
-        playerCordinates = self.warehouse.worker
+        
         playerPreviousPositionStr = state.state.index('@')
+        y, x = divmod(playerPreviousPositionStr, self.warehouse.ncols)
+        playerCordinates = (x, y)
 
         #Check which action was called
         if action == "Left":
@@ -262,21 +264,80 @@ class SokobanPuzzle(search.Problem):
         elif action == "Right":
             playerCordinates = (playerCordinates[0] + 1, playerCordinates[1])
         elif action == "Up":
-            playerCordinates = (playerCordinates[0], playerCordinates[1] + 1)
-        elif action == "Down":
             playerCordinates = (playerCordinates[0], playerCordinates[1] - 1)
+        elif action == "Down":
+            playerCordinates = (playerCordinates[0], playerCordinates[1] + 1)
 
 
-        currentState = state.state
-        nextState = None
+        #Check to see if a box will need to be moved
+        if playerCordinates in self.warehouse.boxes:
+            #then a box was moved
 
-        #Convert the cordinates into a string position so we can update the text reprsentation
-        playerPositionStr = playerCordinates[1] * self.warehouse.ncols + playerCordinates[0]
+            boxCordinates = playerCordinates
+            newBoxCordinates = None
 
-        #update state to reflect next state
-        nextState = currentState[:playerPreviousPositionStr] + ' ' + currentState[playerPreviousPositionStr + 1:]
-        nextState = nextState[:playerPositionStr] + '@' + nextState[playerPositionStr + 1:]
+            if action == "Left":
+                #we need to check if the box can be pushed to the left
+                newBoxCordinates = (boxCordinates[0] - 1, boxCordinates[1])
 
+            elif action == "Right":
+                newBoxCordinates = (boxCordinates[0] + 1, boxCordinates[1]) 
+
+            elif action == "Up":
+                newBoxCordinates = (boxCordinates[0], boxCordinates[1] - 1)
+
+            elif action == "Down":
+                newBoxCordinates = (boxCordinates[0], boxCordinates[1] + 1)
+                
+            #check to see if the new boxes position is in a wall, in another box or in a taboo cell
+            if newBoxCordinates not in self.warehouse.walls and newBoxCordinates not in self.warehouse.boxes and newBoxCordinates not in taboocells:
+
+
+                currentState = state.state
+                nextState = None
+
+                #Convert the cordinates into a string position so we can update the text reprsentation
+                playerPositionStr = playerCordinates[1] * self.warehouse.ncols + playerCordinates[0]
+                boxNewPositionStr = newBoxCordinates[1] * self.warehouse.ncols + newBoxCordinates[0]
+                boxPreviousPositionStr = boxCordinates[1] * self.warehouse.ncols + boxCordinates[0]
+
+                #update state to reflect next state
+                nextState = currentState[:playerPreviousPositionStr] + ' ' + currentState[playerPreviousPositionStr + 1:]
+                nextState = nextState[:boxPreviousPositionStr] + ' ' + nextState[boxPreviousPositionStr + 1:]
+                nextState = nextState[:playerPositionStr] + '@' + nextState[playerPositionStr + 1:]
+                nextState = nextState[:boxNewPositionStr] + '$' + nextState[boxNewPositionStr + 1:]
+                
+                #Update the workers position in the warehouse
+                #self.warehouse.worker = playerCordinates
+
+                #Update the boxes position in the warehouse
+                #To update it we have to find which index the box is
+                #boxIndex = self.warehouse.boxes.index(boxCordinates)
+                #self.warehouse.boxes[boxIndex] = newBoxCordinates 
+            else:
+                #if the new boxes position is valid we need to move it in the warehouse object and update the string representation
+
+                #if it is we need to move it back
+                newBoxCordinates = boxCordinates
+
+                #we can then update the state and return it
+
+                currentState = state.state
+                nextState = currentState
+
+        else:     
+                currentState = state.state
+                nextState = None
+
+                #Convert the cordinates into a string position so we can update the text reprsentation
+                playerPositionStr = playerCordinates[1] * self.warehouse.ncols + playerCordinates[0]
+
+                #update state to reflect next state
+                nextState = currentState[:playerPreviousPositionStr] + ' ' + currentState[playerPreviousPositionStr + 1:]
+                nextState = nextState[:playerPositionStr] + '@' + nextState[playerPositionStr + 1:]
+                
+                #Update the workers position in the warehouse
+                #self.warehouse.worker = playerCordinates
 
 
         newNode = search.Node(nextState)
@@ -295,9 +356,11 @@ class SokobanPuzzle(search.Problem):
 
         teststate = node.state
 
+        print_puzzle(node)
+
         teststate = teststate.replace('@', ' ')
 
-        if teststate == self.goal:
+        if teststate == self.goal.state:
             return True    
 
     
@@ -374,7 +437,7 @@ class SokobanPuzzle(search.Problem):
     def h(self, n):
         '''
         A simple heuristic which calculates the Manhatten Distance between the boxes and targets for each state
-        
+        '''
 
         warehouse = self.warehouse
 
@@ -393,9 +456,9 @@ class SokobanPuzzle(search.Problem):
             manhattenDistance += abs(box - target)
 
         return(manhattenDistance)
-        '''
 
-        return 1
+
+
                 
         
         
@@ -540,26 +603,32 @@ if __name__ == "__main__":
     wh = sokoban.Warehouse()
 
     # CHANGE THIS TO TEST DIFFERENT WAREHOUSES, FOR EXAMPLE:
-    wh.load_warehouse("./warehouses/warehouse_01.txt")
+    wh.load_warehouse("./warehouses/warehouse_09.txt")
 
-    pz = SokobanPuzzle(wh)
+    #pz = SokobanPuzzle(wh)
 
-    actions = pz.actions(pz.initial)
+    #     actions = pz.actions(pz.initial)
 
-    state = pz.initial
+    #     state = pz.initial
 
-    actionSequence = ["Left", "Right"]
+    #     actionSequence = ['Up', 'Right', 'Right', 'Down', 'Up', 'Left', 'Left', 'Down', 'Right', 'Down', 'Right', 'Left', 'Up', 'Up', 'Right', 'Down', 'Right',
+    # 'Down', 'Down', 'Left', 'Up', 'Right', 'Up', 'Left', 'Down', 'Left', 'Up', 'Right', 'Up', 'Left']
 
-    print_puzzle(state)
+    #     print_puzzle(state)
 
-    for action in actionSequence:
-        state = pz.result(state, action)
-        print_puzzle(state)
+    #     for action in actionSequence:
+    #         state = pz.result(state, action)
+    #         actions = pz.actions(state)
+    #         print(actions)
+    #         print_puzzle(state)
 
-   
+    
 
 
     #Solve
+
+
+    solve_weighted_sokoban(wh)
 
     """ actionsequence = ['Up', 'Up', 'Left', 'Down', 'Right', 'Down', 'Left', 'Left', 'Left', 'Left', 'Right', 'Right']
 
