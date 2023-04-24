@@ -49,6 +49,8 @@ def my_team():
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
+taboocells = []
+
 def taboo_cells(warehouse: sokoban.Warehouse):
     '''  
     Identify the taboo cells of a warehouse. A "taboo cell" is by definition
@@ -102,40 +104,69 @@ def taboo_cells(warehouse: sokoban.Warehouse):
         if y > max(columns[x]) or y < min(columns[x]):
             outside_cells.add((x, y))
 
-    
-    
-
     # inside cells are cells that are not outside cells
 
     inside_cells = [cell for cell in non_walls if cell not in outside_cells]
 
-    # corners are cells that are inside cells and have a wall on either side
+
+    # corners are cells that are inside cells and have a wall on two sides
+    # that is a wall on the left and right or a wall on the top and bottom
+    # and are not target cells
+
+    corners = []
     
-    for x, y in inside_cells:
+    for (x, y) in inside_cells:
         if (x, y) not in warehouse.targets:
             if (x - 1, y) in walls and (x, y - 1) in walls:
+                corners.append((x, y))
                 taboocells.append((x, y))
             elif (x + 1, y) in walls and (x, y - 1) in walls:
+                corners.append((x, y))
                 taboocells.append((x, y))
             elif (x - 1, y) in walls and (x, y + 1) in walls:
+                corners.append((x, y))
                 taboocells.append((x, y))
             elif (x + 1, y) in walls and (x, y + 1) in walls:
+                corners.append((x, y))
                 taboocells.append((x, y))
-        
 
-    #Prints a string representation of taboo cells
-    pz = SokobanPuzzle(warehouse)
+    # two corners along a wall have taboo cells between them if none of the cells are target cells
+    # and there is a wall on either side of the cells
+    
+    # for every ith corner, check the entire list if there is a corner with the same x-coordinate, which means they are on the same row
+    for i in range(len(corners)):
+        for j in range(len(corners)):
+            if corners[i][0] == corners[j][0]:
+                # if they are on the same row, check if there are any cells between them that are not target cells
+                # and if there is a wall on either side of the cell. If there is, then that cell is a taboo cell
+                for y in range(corners[i][1] + 1, corners[j][1]):
+                    if (corners[i][0], y) not in warehouse.targets:
+                        if (corners[i][0] - 1, y) in walls or (corners[i][0] + 1, y) in walls:
+                            taboocells.append((corners[i][0], y))
 
-    state = pz.initial
+            # if they are on the same column, check if there are any cells between them that are not target cells
+            # and if there is a wall on either side of the cell. If there is, then that cell is a taboo cell
+            elif corners[i][1] == corners[j][1]:
+                for x in range(corners[i][0] + 1, corners[j][0]):
+                    if (x, corners[i][1]) not in warehouse.targets:
+                        # if there is a wall on either side
+                        if (x, corners[i][1] - 1) in walls or (x, corners[i][1] + 1) in walls:
+                            taboocells.append((x, corners[i][1]))
 
-    for corner in taboocells:
-        x_position = corner[1] * warehouse.ncols + corner[0]
+    
 
-        state.state = state.state[:x_position] + 'x' + state.state[x_position + 1:]
 
-    state.state = state.state.replace('$', ' ').replace('.', ' ').replace('*', ' ')
+    warehouse_string = warehouse.__str__().replace('\n', '')
 
-    return state
+    for taboocell in taboocells:
+        pos = taboocell[1] * warehouse.ncols + taboocell[0]
+
+        warehouse_string = warehouse_string[:pos] + 'X' + warehouse_string[pos + 1:]
+
+    # remove the worker, boxes and targets from the string
+    warehouse_string = warehouse_string.replace('@', ' ').replace('$', ' ').replace('.', ' ').replace('*', ' ')
+    return warehouse_string
+
 
         
         
@@ -646,8 +677,8 @@ def print_puzzle(state):
     '''
     result = ""
 
-    for i in range(0, len(state.state), wh.ncols):
-        result += state.state[i:i + wh.ncols] + "\n"
+    for i in range(0, len(state), wh.ncols):
+        result += state[i:i + wh.ncols] + "\n"
 
     print(result)
 
@@ -665,6 +696,7 @@ if __name__ == "__main__":
     wh = sokoban.Warehouse()
 
     # CHANGE THIS TO TEST DIFFERENT WAREHOUSES, FOR EXAMPLE:
+
     wh.load_warehouse("./warehouses/warehouse_09.txt")
 
     pz = SokobanPuzzle(wh)
@@ -687,5 +719,3 @@ if __name__ == "__main__":
 
 
     
-
-
