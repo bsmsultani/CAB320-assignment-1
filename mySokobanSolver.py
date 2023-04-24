@@ -151,6 +151,8 @@ def taboo_cells(warehouse: sokoban.Warehouse):
                         if (x, corners[i][1] - 1) in walls or (x, corners[i][1] + 1) in walls:
                             taboocells.append((x, corners[i][1]))
 
+    
+
 
     warehouse_string = warehouse.__str__().replace('\n', '')
 
@@ -159,7 +161,8 @@ def taboo_cells(warehouse: sokoban.Warehouse):
 
         warehouse_string = warehouse_string[:pos] + 'X' + warehouse_string[pos + 1:]
 
-
+    # remove the worker, boxes and targets from the string
+    warehouse_string = warehouse_string.replace('@', ' ').replace('$', ' ').replace('.', ' ').replace('*', ' ')
     return warehouse_string
 
         
