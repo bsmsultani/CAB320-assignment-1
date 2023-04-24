@@ -626,7 +626,10 @@ def solve_weighted_sokoban(warehouse):
     sol = search.astar_graph_search(pz)
 
     if sol:
-        print_puzzle(sol.state)
+        #S = pz.initial.solution
+        #C = sol.path_cost
+        #return S, C
+        print("Solution found")
     else:
         return "Impossible"
 
@@ -662,7 +665,7 @@ if __name__ == "__main__":
     wh = sokoban.Warehouse()
 
     # CHANGE THIS TO TEST DIFFERENT WAREHOUSES, FOR EXAMPLE:
-    wh.load_warehouse("./warehouses/warehouse_07.txt")
+    wh.load_warehouse("./warehouses/warehouse_09.txt")
 
     pz = SokobanPuzzle(wh)
   
