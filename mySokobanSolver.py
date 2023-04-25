@@ -81,7 +81,9 @@ def taboo_cells(warehouse: sokoban.Warehouse):
 
     walls = warehouse.walls
 
-    max_x, max_y = max(walls)
+    max_x, max_y = max(x for x, y in walls), max(y for x, y in walls)
+
+    print(max_x, max_y)
 
     non_walls = [(x, y) for x in range(max_x + 1) for y in range(max_y + 1) if (x, y) not in walls]
 
@@ -134,23 +136,24 @@ def taboo_cells(warehouse: sokoban.Warehouse):
     # and there is a wall on either side of the cells
     
     # for every ith corner, check the entire list if there is a corner with the same x-coordinate, which means they are on the same row
+    
     for i in range(len(corners)):
         for j in range(len(corners)):
             if corners[i][0] == corners[j][0]:
                 # if they are on the same row, check if there are any cells between them that are not target cells
-                # and if there is a wall on either side of the cell. If there is, then that cell is a taboo cell
+                # and if there is a continuous wall on either side of the cell. If there is, then that cell is a taboo cell
                 for y in range(corners[i][1] + 1, corners[j][1]):
                     if (corners[i][0], y) not in warehouse.targets:
-                        if (corners[i][0] - 1, y) in walls or (corners[i][0] + 1, y) in walls:
+                        if all((corners[i][0] - 1 , y_) in walls for y_ in range(corners[i][1], corners[j][1])) or all((corners[i][0] + 1, y_) in walls for y_ in range(corners[i][1], corners[j][1])):
                             taboocells.append((corners[i][0], y))
 
+
             # if they are on the same column, check if there are any cells between them that are not target cells
-            # and if there is a wall on either side of the cell. If there is, then that cell is a taboo cell
+            # and if there is continuous wall on either side of the cell. If there is, then that cell is a taboo cell
             elif corners[i][1] == corners[j][1]:
                 for x in range(corners[i][0] + 1, corners[j][0]):
                     if (x, corners[i][1]) not in warehouse.targets:
-                        # if there is a wall on either side
-                        if (x, corners[i][1] - 1) in walls or (x, corners[i][1] + 1) in walls:
+                        if all((x_, corners[i][1] - 1) in walls for x_ in range(corners[i][0], corners[j][0])) or all((x_, corners[i][1] + 1) in walls for x_ in range(corners[i][0], corners[j][0])):
                             taboocells.append((x, corners[i][1]))
 
     
@@ -422,8 +425,6 @@ class SokobanPuzzle(search.Problem):
 
         teststate = node.state
 
-        print_puzzle(node)
-
         teststate = teststate.replace('@', ' ')
 
         if teststate == self.goal.state:
@@ -642,8 +643,8 @@ def print_puzzle(state):
     '''
     result = ""
 
-    for i in range(0, len(state.state), wh.ncols):
-        result += state.state[i:i + wh.ncols] + "\n"
+    for i in range(0, len(state), wh.ncols):
+        result += state[i:i + wh.ncols] + "\n"
 
     print(result)
 
@@ -665,9 +666,10 @@ if __name__ == "__main__":
     wh.load_warehouse("./warehouses/warehouse_147.txt")
 
     pz = SokobanPuzzle(wh)
-  
 
+    print(wh)
     #Solve
+
     print(solve_weighted_sokoban(wh))
 
     """ actionsequence = ['Up', 'Up', 'Left', 'Down', 'Right', 'Down', 'Left', 'Left', 'Left', 'Left', 'Right', 'Right']
@@ -677,9 +679,4 @@ if __name__ == "__main__":
     for action in actionsequence:
         state = pz.result(state, action)
         print_puzzle(state)
- """
-
-
-
-
-    
+    """
