@@ -279,6 +279,9 @@ class SokobanPuzzle(search.Problem):
 
         '''
 
+
+        self.warehouse.extract_locations
+
         #Extract box positions
         boxes = []
         numOfUnsolvedBoxes = state.state.count('$')
@@ -422,8 +425,6 @@ class SokobanPuzzle(search.Problem):
 
         teststate = node.state
 
-        print_puzzle(node)
-
         teststate = teststate.replace('@', ' ')
 
         if teststate == self.goal.state:
@@ -434,6 +435,12 @@ class SokobanPuzzle(search.Problem):
 
     def path_cost(self, c, state1: search.Node, action, state2: search.Node):
 
+        warehouseStr = self.warehouse.__str__()
+        warehouseState = self.warehouse.extract_locations(warehouseStr)
+
+        print(warehouseState)
+
+        
         return c 
 
     """ '''
@@ -504,6 +511,10 @@ class SokobanPuzzle(search.Problem):
         '''
         A simple heuristic which calculates the Manhatten Distance between the boxes and targets for each state
         '''
+
+        #Update heuristic to use manhatten distance from the most weighted box to the nearest target
+
+
         warehouse = self.warehouse
         state = n.state
 
@@ -660,7 +671,9 @@ def solve_weighted_sokoban(warehouse):
         #S = pz.initial.solution
         #C = sol.path_cost
         #return S, C
-        print("Solution found")
+        print_puzzle(sol.state.state)
+        return("Solution found")
+
     else:
         return "Impossible"
 
@@ -694,26 +707,13 @@ def print_puzzle(state):
 
 if __name__ == "__main__":
     wh = sokoban.Warehouse()
-
     # CHANGE THIS TO TEST DIFFERENT WAREHOUSES, FOR EXAMPLE:
-
-    wh.load_warehouse("./warehouses/warehouse_09.txt")
+    wh.load_warehouse("./warehouses/warehouse_07.txt")
 
     pz = SokobanPuzzle(wh)
-  
-    print_puzzle(taboo_cells(wh))
 
     #Solve
     print(solve_weighted_sokoban(wh))
-
-    """ actionsequence = ['Up', 'Up', 'Left', 'Down', 'Right', 'Down', 'Left', 'Left', 'Left', 'Left', 'Right', 'Right']
-
-    state = pz.initial
-
-    for action in actionsequence:
-        state = pz.result(state, action)
-        print_puzzle(state)
- """
 
 
 
