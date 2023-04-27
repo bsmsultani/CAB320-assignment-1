@@ -453,10 +453,7 @@ class SokobanPuzzle(search.Problem):
 
                 # if the current state's weight is not in the weight tracker then we can calculate the weight of the new state
                 if state.state in self.weight_tracker:
-                    print_puzzle(nextState)
                     self.weight_tracker.set_weight(state.state, nextState, newBoxCordinates)
-                    print(self.weight_tracker.get_sum_weight(nextState))
-                    print(self.weight_tracker.get_weight(nextState))
 
             else:
                 #if the new boxes position is valid we need to move it in the warehouse object and update the string representation
@@ -495,6 +492,7 @@ class SokobanPuzzle(search.Problem):
         newNode.parent = state
         newNode.action = action
         newNode.path_cost = self.path_cost(state.path_cost, state, action, newNode)
+        print(newNode.path_cost)
 
         # add new node and its weight as 
         
@@ -727,7 +725,7 @@ if __name__ == "__main__":
 
     # CHANGE THIS TO TEST DIFFERENT WAREHOUSES, FOR EXAMPLE:
 
-    wh.load_warehouse("./warehouses/warehouse_53.txt")
+    wh.load_warehouse("./warehouses/warehouse_147.txt")
 
     pz = SokobanPuzzle(wh)
 
