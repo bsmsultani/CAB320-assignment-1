@@ -194,14 +194,21 @@ class TrackWeight(object):
             initial_box_weight.append((box, weight))
         
 
-        initial_node = initial_node.replace('@', ' ')
+        initial_node = initial_node.replace('@', ' ').replace('.', ' ')
         self.track_weight[initial_node] = initial_box_weight
     
     def get_weight(self, state: str):
-        state = state.replace('@', ' ')
+        state = state.replace('@', ' ').replace('.', ' ')
         
         if state in self.track_weight:
             return self.track_weight[state]
+        else:
+            return None
+        
+    def get_sum_weight(self, state: str):
+        state = state.replace('@', ' ').replace('.', ' ')
+        if state in self.track_weight:
+            return sum([weight[1] for weight in self.track_weight[state]])
         else:
             return None
         
@@ -221,7 +228,7 @@ class TrackWeight(object):
             else:
                 next_state_box_weights.append((newBoxCordinates, weight))
 
-        state2Str = state2.replace('@', ' ')
+        state2Str = state2.replace('@', ' ').replace('.', ' ')
 
         self.track_weight[state2Str] = next_state_box_weights
 
@@ -236,7 +243,7 @@ class TrackWeight(object):
         return box_coordinates
     
     def __contains__(self, node: str ):
-        return node.replace('@', ' ') in self.track_weight
+        return node.replace('@', ' ').replace('.', ' ') in self.track_weight
 
         
 
@@ -449,6 +456,8 @@ class SokobanPuzzle(search.Problem):
                     self.weight_tracker.set_weight(state.state, nextState, newBoxCordinates)
                     print(self.weight_tracker.get_weight(nextState))
                     print_puzzle(nextState)
+                    print(self.weight_tracker.get_sum_weight(nextState))
+                    print(self.weight_tracker.get_weight(nextState))
 
             else:
                 #if the new boxes position is valid we need to move it in the warehouse object and update the string representation
@@ -515,11 +524,22 @@ class SokobanPuzzle(search.Problem):
         The cost of an action is 1 + weight of the box pushed, if any.
         '''
 
-        return 0
+        # get state2 weight from the weight tracker
 
+        # if the player hasn't moved
 
-                    
-                    
+        if state1.state == state2.state:
+            return c
+
+        # if the player has moved but not pushed a box
+        elif state1.state.replace('@', ' ') == state2.state.replace('@', ' '):
+            return c + 1
+        
+        # if the player has pushed a box
+        else:
+            return c + 1 + self.weight_tracker.get_sum_weight(state2.state)
+
+            
 
     
     def h(self, n):
@@ -708,7 +728,7 @@ if __name__ == "__main__":
 
     # CHANGE THIS TO TEST DIFFERENT WAREHOUSES, FOR EXAMPLE:
 
-    wh.load_warehouse("./warehouses/warehouse_147.txt")
+    wh.load_warehouse("./warehouses/warehouse_53.txt")
 
     pz = SokobanPuzzle(wh)
 
