@@ -46,10 +46,13 @@ def my_team():
     '''
     return [[(11247282), 'Bismillah'], [10601171, 'Lucas', 'Ferreira']]
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - AUXULLARY FUNCTIONS- - - - - - - - - - - - - - - - - - - - - - -
 
 
 taboocells = []
+
+
+
 
 def taboo_cells(warehouse: sokoban.Warehouse):
     '''  
@@ -170,10 +173,73 @@ def taboo_cells(warehouse: sokoban.Warehouse):
     warehouse_string = warehouse_string.replace('@', ' ').replace('$', ' ').replace('.', ' ').replace('*', ' ')
     return warehouse_string
 
-
-        
+ 
         
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+################ auxuallary function #########################
+
+
+class TrackWeight(object):
+
+    def __init__(self, initial_node: str, initial_weight: list, numberOfColumns: int):
+        self.numberOfColumns = numberOfColumns
+        self.track_weight = {}
+
+        initial_box_coordinates = self.__get_box_coordinates___(initial_node)
+        initial_box_weight = []
+
+        for idx, box in enumerate(initial_box_coordinates):
+            weight = initial_weight[idx]
+            initial_box_weight.append((box, weight))
+        
+
+        initial_node = initial_node.replace('@', ' ')
+        self.track_weight[initial_node] = initial_box_weight
+    
+    def get_weight(self, state: str):
+        state = state.replace('@', ' ')
+        
+        if state in self.track_weight:
+            return self.track_weight[state]
+        else:
+            return None
+        
+    def set_weight(self, state1: str, state2: str, newBoxCordinates: tuple):
+        
+        # get the box coordinates and the weights of the boxes in the state1
+        box_coordinate = self.__get_box_coordinates___(state1)
+        state_weights = self.get_weight(state1)
+        
+        next_state_box_coordinates = self.__get_box_coordinates___(state2)
+        next_state_box_weights = []
+
+        for idx, box in enumerate(box_coordinate):
+            weight = state_weights[idx][1]
+            if box in next_state_box_coordinates:
+                next_state_box_weights.append((box, weight))
+            else:
+                next_state_box_weights.append((newBoxCordinates, weight))
+
+        state2Str = state2.replace('@', ' ')
+
+        self.track_weight[state2Str] = next_state_box_weights
+
+
+    def __get_box_coordinates___(self, state: str):
+
+        box_coordinates = []
+        for i in range(len(state)):
+            if state[i] == '$':
+                y, x = divmod(i, self.numberOfColumns)
+                box_coordinates.append((x, y))
+        return box_coordinates
+    
+    def __contains__(self, node: str ):
+        return node.replace('@', ' ') in self.track_weight
+
+        
+
 
 
 class SokobanPuzzle(search.Problem):
@@ -220,6 +286,8 @@ class SokobanPuzzle(search.Problem):
 
         super().__init__(search.Node(initial), search.Node(goal))
 
+        self.weight_tracker = TrackWeight(initial, self.warehouse.weights, self.warehouse.ncols)
+    
 
     def actions(self, state: search.Node):
         
@@ -263,7 +331,6 @@ class SokobanPuzzle(search.Problem):
             L.append("Down")
         
         return L
-
 
 
     def result(self, state: search.Node, action):
@@ -344,6 +411,7 @@ class SokobanPuzzle(search.Problem):
 
             elif action == "Down":
                 newBoxCordinates = (boxCordinates[0], boxCordinates[1] + 1)
+
                 
             #check to see if the new boxes position is in a wall, in another box or in a taboo cell
             if newBoxCordinates not in self.warehouse.walls and newBoxCordinates not in boxes and newBoxCordinates not in taboocells:
@@ -374,8 +442,14 @@ class SokobanPuzzle(search.Problem):
                     nextState = nextState[:boxNewPositionStr] + '*' + nextState[boxNewPositionStr + 1:]
                 else:
                     nextState = nextState[:boxNewPositionStr] + '$' + nextState[boxNewPositionStr + 1:]
-                
-            
+
+
+                # if the current state's weight is not in the weight tracker then we can calculate the weight of the new state
+                if state.state in self.weight_tracker:
+                    self.weight_tracker.set_weight(state.state, nextState, newBoxCordinates)
+                    print(self.weight_tracker.get_weight(nextState))
+                    print_puzzle(nextState)
+
             else:
                 #if the new boxes position is valid we need to move it in the warehouse object and update the string representation
 
@@ -408,14 +482,16 @@ class SokobanPuzzle(search.Problem):
                 nextState = nextState[:playerPositionStr] + '@' + nextState[playerPositionStr + 1:]
                 
 
-
+        
         newNode = search.Node(nextState)
         newNode.parent = state
-        newNode.path_cost = 1
+        newNode.action = action
+        newNode.path_cost = self.path_cost(state.path_cost, state, action, newNode)
+
+        # add new node and its weight as 
+        
 
         return newNode 
-
-        
 
 
     def goal_test(self, node: search.Node):
@@ -430,8 +506,6 @@ class SokobanPuzzle(search.Problem):
         if teststate == self.goal.state:
             return True    
 
-    
-    
 
     def path_cost(self, c, state1: search.Node, action, state2: search.Node):
     
@@ -441,36 +515,12 @@ class SokobanPuzzle(search.Problem):
         The cost of an action is 1 + weight of the box pushed, if any.
         '''
 
-        def get_box_cordinates(state):
-                
-                boxCordinates = []
-    
-                for i in range(len(state.state)):
-                    if state.state[i] == '$':
-                        y, x = divmod(i, self.warehouse.ncols)
-                        boxCordinates.append((x, y))
-                
-                return boxCordinates
-        
-
-        state1_boxes = get_box_cordinates(state1)
-        state2_boxes = get_box_cordinates(state2)
+        return 0
 
 
-        # if the agent is in the same position in the initial state and the final state
-        # there is no incurred cost
-        if state1.state == state2.state:
-            return c
-        
-        # if the agent has moved
-        else:
-            
-            print("state1: ", state1_boxes)
-            print("state2: ", state2_boxes)
+                    
+                    
 
-            return c
-
-                
     
     def h(self, n):
         '''
@@ -518,11 +568,6 @@ class SokobanPuzzle(search.Problem):
 
         return(manhattenDistance)
 
-
-
-                
-        
-        
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
