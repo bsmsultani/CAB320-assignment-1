@@ -492,10 +492,6 @@ class SokobanPuzzle(search.Problem):
         newNode.parent = state
         newNode.action = action
         newNode.path_cost = self.path_cost(state.path_cost, state, action, newNode)
-        print(newNode.path_cost)
-
-        # add new node and its weight as 
-        
 
         return newNode 
 
@@ -725,14 +721,25 @@ if __name__ == "__main__":
 
     # CHANGE THIS TO TEST DIFFERENT WAREHOUSES, FOR EXAMPLE:
 
-    wh.load_warehouse("./warehouses/warehouse_147.txt")
+    # time how long it takes to solve a warehouse
+
+    import time
+
+    wh.load_warehouse("./warehouses/warehouse_5n.txt")
+
 
     pz = SokobanPuzzle(wh)
 
     print(wh)
     #Solve
 
+    start = time.time()
+
     print(solve_weighted_sokoban(wh))
+
+    end = time.time()
+
+    print("Time taken to solve warehouse: ", end - start, "seconds")
 
     """ actionsequence = ['Up', 'Up', 'Left', 'Down', 'Right', 'Down', 'Left', 'Left', 'Left', 'Left', 'Right', 'Right']
 
