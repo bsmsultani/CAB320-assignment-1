@@ -237,7 +237,7 @@ class TrackWeight(object):
 
         box_coordinates = []
         for i in range(len(state)):
-            if state[i] == '$':
+            if state[i] == '$' or state[i] == "*":
                 y, x = divmod(i, self.numberOfColumns)
                 box_coordinates.append((x, y))
         return box_coordinates
@@ -453,9 +453,8 @@ class SokobanPuzzle(search.Problem):
 
                 # if the current state's weight is not in the weight tracker then we can calculate the weight of the new state
                 if state.state in self.weight_tracker:
-                    self.weight_tracker.set_weight(state.state, nextState, newBoxCordinates)
-                    print(self.weight_tracker.get_weight(nextState))
                     print_puzzle(nextState)
+                    self.weight_tracker.set_weight(state.state, nextState, newBoxCordinates)
                     print(self.weight_tracker.get_sum_weight(nextState))
                     print(self.weight_tracker.get_weight(nextState))
 
