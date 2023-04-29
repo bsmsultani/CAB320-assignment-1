@@ -191,7 +191,7 @@ class TrackWeight(object):
 
         for idx, box in enumerate(initial_box_coordinates):
             weight = initial_weight[idx]
-            initial_box_weight.append((box, weight))
+            initial_box_weight.append((box, weight, False))
         
 
         initial_node = initial_node.replace('@', ' ').replace('.', ' ')
@@ -205,10 +205,12 @@ class TrackWeight(object):
         else:
             return None
         
-    def get_sum_weight(self, state: str):
+    def get_moved_box_weight(self, state: str):
         state = state.replace('@', ' ').replace('.', ' ')
         if state in self.track_weight:
-            return sum([weight[1] for weight in self.track_weight[state]])
+            # return the weight of the moved box
+            print(self.track_weight[state])
+            return [weight for (box, weight, moved) in self.track_weight[state] if moved][0]
         else:
             return None
         
@@ -224,9 +226,9 @@ class TrackWeight(object):
         for idx, box in enumerate(box_coordinate):
             weight = state_weights[idx][1]
             if box in next_state_box_coordinates:
-                next_state_box_weights.append((box, weight))
+                next_state_box_weights.append((box, weight, False))
             else:
-                next_state_box_weights.append((newBoxCordinates, weight))
+                next_state_box_weights.append((newBoxCordinates, weight, True))
 
         state2Str = state2.replace('@', ' ').replace('.', ' ')
 
@@ -525,12 +527,12 @@ class SokobanPuzzle(search.Problem):
             return c
 
         # if the player has moved but not pushed a box
-        elif state1.state.replace('@', ' ') == state2.state.replace('@', ' '):
+        elif state1.state.replace('@', ' ').replace('.', ' ') == state2.state.replace('@', ' ').replace('.', ' '):
             return c + 1
         
         # if the player has pushed a box
         else:
-            return c + 1 + self.weight_tracker.get_sum_weight(state2.state)
+            return c + 1 + self.weight_tracker.get_moved_box_weight(state2.state)
 
             
 
@@ -725,7 +727,7 @@ if __name__ == "__main__":
 
     import time
 
-    wh.load_warehouse("./warehouses/warehouse_5n.txt")
+    wh.load_warehouse("./warehouses/warehouse_03.txt")
 
 
     pz = SokobanPuzzle(wh)
