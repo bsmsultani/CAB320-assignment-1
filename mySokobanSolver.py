@@ -31,6 +31,7 @@ Last modified by 2022-03-27  by f.maire@qut.edu.au
 # with these files
 import search 
 import sokoban
+import sys
 
 taboocells = []
 
@@ -209,7 +210,6 @@ class TrackWeight(object):
         state = state.replace('@', ' ').replace('.', ' ')
         if state in self.track_weight:
             # return the weight of the moved box
-            print(self.track_weight[state])
             return [weight for (box, weight, moved) in self.track_weight[state] if moved][0]
         else:
             return None
@@ -541,47 +541,37 @@ class SokobanPuzzle(search.Problem):
         '''
         A simple heuristic which calculates the Manhatten Distance between the boxes and targets for each state
         '''
-        warehouse = self.warehouse
+
         state = n.state
 
-        boxes = []
-        numOfUnsolvedBoxes = state.state.count('$')
+        boxes = list((self.weight_tracker.get_weight(state.state)))
 
-        boxStateAnalysis = state.state
+        playerPositionStr = state.state.index('@')
+        y_player, x_player = divmod(playerPositionStr, self.warehouse.ncols)
 
-        for box in range(numOfUnsolvedBoxes):
-            boxPositionStr = boxStateAnalysis.index('$')
-            boxStateAnalysis = boxStateAnalysis[:boxPositionStr] + ' ' + boxStateAnalysis[boxPositionStr + 1:]
-            y, x = divmod(boxPositionStr, self.warehouse.ncols)
-            boxPositionCordinates = (x, y)
-            boxes.append(boxPositionCordinates)
+        heaviest_box = [(0, 0), 0]
 
+        #before we search for the heavist box we should remove the boxes in targets
+        for box in boxes:
+            if box[0] in self.warehouse.targets:
+                index = boxes.index(box)
+                boxes.pop(index)
 
-        numOfSolvedBoxes = state.state.count('*')
+        for box in boxes:
+            if heaviest_box[1] < box[1]:
+                heaviest_box = box
 
-        for box in range(numOfSolvedBoxes):
-            boxPositionStr = boxStateAnalysis.index('*')
-            boxStateAnalysis = boxStateAnalysis[:boxPositionStr] + ' ' + boxStateAnalysis[boxPositionStr + 1:]
-            y, x = divmod(boxPositionStr, self.warehouse.ncols)
-            boxPositionCordinates = (x, y)
-            boxes.append(boxPositionCordinates)
+    
+        minimmumManhattenDistance = sys.maxsize
+    
+        x_box, y_box = (heaviest_box[0][0], heaviest_box[0][1])
 
-        targets = warehouse.targets
+        for i in range(len(self.warehouse.targets)):
+            x_target, y_target = self.warehouse.targets[i]
+            calculatedManhattenDistance = (abs((x_target - x_box)) + abs((y_target - y_box))) + (abs((x_box - x_player)) + abs((y_box - y_player)))
+            minimmumManhattenDistance = min(minimmumManhattenDistance, calculatedManhattenDistance )
 
-        manhattenDistance = 0
-
-
-        for i in range (len(boxes)):
-            #convert box and target from (x, y) to position
-            box = boxes[i][1] * warehouse.ncols + boxes[i][0]
-            target = targets[i][1] * warehouse.ncols + targets[i][0]
-
-            
-            manhattenDistance += abs(box - target)
-
-        manhattenDistance -= numOfSolvedBoxes
-
-        return(manhattenDistance)
+        return minimmumManhattenDistance
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -650,6 +640,14 @@ def check_elem_action_seq(warehouse: sokoban.Warehouse, action_seq):
 
         if playerposition in walls or playerposition in boxes:
             return "Impossible"
+        
+
+
+        result = ""
+        for i in range(0, len(state.state), warehouse.ncols):
+            result += state.state[i:i + warehouse.ncols] + "\n"
+    
+    return result
                     
 
 
@@ -685,7 +683,6 @@ def solve_weighted_sokoban(warehouse):
     sol = search.astar_graph_search(pz)
 
     if sol:
-        print("Solution found")
         return sol.solution(), sol.path_cost
     else:
         return "Impossible"
@@ -727,7 +724,7 @@ if __name__ == "__main__":
 
     import time
 
-    wh.load_warehouse("./warehouses/warehouse_03.txt")
+    wh.load_warehouse("./warehouses/warehouse_147.txt")
 
 
     pz = SokobanPuzzle(wh)
