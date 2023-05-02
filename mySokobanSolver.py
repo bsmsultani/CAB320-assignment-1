@@ -224,15 +224,15 @@ class extend_Node(search.Node):
                             break
     
     def get_moved_box_weight(self):
-        if self.parent:
-            print(self.parent.box_weight)
-        
-        print(self.box_weight)
-        
+        '''
+        Returns the weight of the box that is moved in the node
+        '''
+
+        # iterate through the box_weight dictionary and return the weight of the box that is moved, if the moved value is True
         for box in self.box_weight:
-            if self.box_weight[box][1]:
+            if self.box_weight[box][1]:                
                 return self.box_weight[box][0]
-        
+    
         return None
     
 
@@ -278,6 +278,33 @@ class SokobanPuzzle(search.Problem):
         goal = extend_Node(goal)
 
         super().__init__(initial, goal)
+
+        # find the closest target to each box in the warehouse and store it in a list of tuples of the form (box, weight, target)
+
+        self.closest_target_to_weight = []
+        targets = warehouse.targets.copy()
+
+        for box in warehouse.boxes:
+            weight = self.warehouse.weights[self.warehouse.boxes.index(box)]
+            # find the closest target for the box
+            closest_target = None
+            closest_target_distance = float('inf')
+
+            for target in targets:
+                target_distance = self.manhattan_distance(box, target)
+
+                if target_distance < closest_target_distance:
+                    closest_target = target
+                    closest_target_distance = target_distance
+
+            # add box : target
+
+            self.closest_target_to_weight.append((box, weight, target))
+
+
+            # remove the target from the list of targets
+
+            targets.remove(closest_target)
         
 
     def get_box_coordinate(self, state: str):
@@ -296,6 +323,12 @@ class SokobanPuzzle(search.Problem):
                 y, x = divmod(i, self.warehouse.ncols)
                 box_coordinates.append((x, y))
         return box_coordinates
+    
+    def manhattan_distance(self, box_coordinate, target):
+        '''
+        Returns the manhattan distance between the box and the target
+        '''
+        return abs(box_coordinate[0] - target[0]) + abs(box_coordinate[1] - target[1])
 
     
 
@@ -497,7 +530,7 @@ class SokobanPuzzle(search.Problem):
 
 
     def path_cost(self, c, state1: extend_Node, action, state2: extend_Node):
-
+       
         '''
     
         Determines the cost of moving from one state to the next, including when pushing boxes.
@@ -521,13 +554,13 @@ class SokobanPuzzle(search.Problem):
             return c
 
         # if the player has moved but not pushed a box
-        elif state1.get_moved_box_weight() == None:
+        elif state2.get_moved_box_weight() == None:
             return c + 1
         
         # if the player has moved and pushed a box
 
         else:
-            return c + 1 + state1.get_moved_box_weight()
+            return c + 1 + state2.get_moved_box_weight()
 
             
 
@@ -537,7 +570,43 @@ class SokobanPuzzle(search.Problem):
         create a heuristic function that estimates the cost of the cheapest path from the state at node n to a goal state.
         '''
 
-        return 0
+
+        targets = self.warehouse.targets.copy()
+        # get the box coordinates, weight and whether a box has been moved and store in a list of tuples (box_coordinate, weight, moved) for the current state
+        box_weight_moved = [(box_coordinate, weight_moved[0], weight_moved[1]) for box_coordinate, weight_moved in n.state.box_weight.items()]
+
+        # sort the box in descending order of weight such that [((x,y), 99, False), ((x,y), 89, True), ((x,y), 88, False)]
+        box_weight_moved.sort(key=lambda x: x[1] , reverse=True)
+
+        total_distance = 0
+
+        # get the target (box, weight, target) boxes in the original node
+
+        target_to_weight = self.closest_target_to_weight.copy()
+
+        # sort the variable in descending order of weight such that [((x,y), 99, (x,y)), ((x,y), 89, (x,y)), ((x,y), 88, (x,y))]
+        target_to_weight.sort(key=lambda x: x[1] , reverse=True)
+
+        # the boxes and the targets are sorted in the same order so we can iterate them 
+
+        for i in range(len(box_weight_moved)):
+            box_coordinate, weight, moved = box_weight_moved[i]
+            original_box, original_weight, target = target_to_weight.pop(0)
+
+
+            if moved:
+                # if moving the weight has moved the box closer to the target then reward the move by reducing the total distance
+
+                if self.manhattan_distance(box_coordinate, target) > self.manhattan_distance(original_box, target):
+                    total_distance += self.manhattan_distance(original_box, target)
+                else:
+                    total_distance -= self.manhattan_distance(box_coordinate, target)
+            
+            else:
+                total_distance += self.manhattan_distance(box_coordinate, target)
+
+        print(total_distance)
+        return total_distance
 
 
 
@@ -686,9 +755,21 @@ def print_puzzle(state):
 if __name__ == "__main__":
     wh = sokoban.Warehouse()
 
-    wh.load_warehouse("./warehouses/warehouse_5n.txt")
+
+    wh.load_warehouse("./warehouses/warehouse_81.txt")
+
 
 
     pz = SokobanPuzzle(wh)
 
+    import time
+
+    # time the search
+
+    start = time.time()
+
     print(solve_weighted_sokoban(wh))
+
+    end = time.time()
+
+    print(end - start)
