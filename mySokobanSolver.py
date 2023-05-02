@@ -248,17 +248,6 @@ class SokobanPuzzle(search.Problem):
     the provided module 'search.py'. 
     
     '''
-    
-    #
-    #         "INSERT YOUR CODE HERE"
-    #
-    #     Revisit the sliding puzzle and the pancake puzzle for inspiration!
-    #
-    #     Note that you will need to add several functions to 
-    #     complete this class. For example, a 'result' method is needed
-    #     to satisfy the interface of 'search.Problem'.
-    #
-    #     You are allowed (and encouraged) to use auxiliary functions and classes
 
     
     def __init__(self, warehouse: sokoban.Warehouse):
@@ -370,26 +359,10 @@ class SokobanPuzzle(search.Problem):
 
         #Extract box positions
         boxes = []
-        numOfUnsolvedBoxes = state.state.count('$')
 
         boxStateAnalysis = state.state
-
-        for box in range(numOfUnsolvedBoxes):
-            boxPositionStr = boxStateAnalysis.index('$')
-            boxStateAnalysis = boxStateAnalysis[:boxPositionStr] + ' ' + boxStateAnalysis[boxPositionStr + 1:]
-            y, x = divmod(boxPositionStr, self.warehouse.ncols)
-            boxPositionCordinates = (x, y)
-            boxes.append(boxPositionCordinates)
-
-
-        numOfSolvedBoxes = state.state.count('*')
-
-        for box in range(numOfSolvedBoxes):
-            boxPositionStr = boxStateAnalysis.index('*')
-            boxStateAnalysis = boxStateAnalysis[:boxPositionStr] + ' ' + boxStateAnalysis[boxPositionStr + 1:]
-            y, x = divmod(boxPositionStr, self.warehouse.ncols)
-            boxPositionCordinates = (x, y)
-            boxes.append(boxPositionCordinates)
+        
+        boxes = self.get_box_coordinate(boxStateAnalysis)
 
         #Move the player based on the action
 
@@ -708,7 +681,7 @@ def print_puzzle(state):
 if __name__ == "__main__":
     wh = sokoban.Warehouse()
 
-    wh.load_warehouse("./warehouses/warehouse_5n.txt")
+    wh.load_warehouse("./warehouses/warehouse_07.txt")
 
 
     pz = SokobanPuzzle(wh)
