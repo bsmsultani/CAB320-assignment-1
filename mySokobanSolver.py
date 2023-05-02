@@ -513,7 +513,6 @@ class SokobanPuzzle(search.Problem):
             (for walking) + the cost of moving the box (weight)
         '''
 
-        # get state2 weight from the weight tracker
 
         # if the player hasn't moved
 
@@ -568,8 +567,6 @@ def check_elem_action_seq(warehouse: sokoban.Warehouse, action_seq):
     '''
 
 
-    ## Situations which are illegal: Box in wall, pushing 2 boxes, player in wall, player in a box
-
     walls = warehouse.walls
 
     boxes = warehouse.boxes
@@ -591,11 +588,16 @@ def check_elem_action_seq(warehouse: sokoban.Warehouse, action_seq):
 
     for move in action_seq:
 
-        #update boxes, incase any have been moved
-        boxes = warehouse.boxes
-        
+        previousPlayerPosition = playerposition        
         #move to next state
         state = pz.result(state, move)
+
+        #update boxes, incase any have been moved
+        box_coordinates = []
+        for i in range(len(state.state)):
+            if state.state[i] == '$' or state.state[i] == "*":
+                y, x = divmod(i, warehouse.ncols)
+                box_coordinates.append((x, y))
 
         #extract the players cordinates for the move that has just occured
 
@@ -605,8 +607,16 @@ def check_elem_action_seq(warehouse: sokoban.Warehouse, action_seq):
 
         #check if player position is in a wall or box if the move is made
 
-        if playerposition in walls or playerposition in boxes:
+        if playerposition in walls or playerposition in box_coordinates or playerposition == previousPlayerPosition:
             return "Impossible"
+        
+    
+    result = ""
+
+    for i in range(0, len(state.state), warehouse.ncols):
+        result += state.state[i:i + warehouse.ncols] + "\n"
+    result = result[0:len(result) - 3] + '   '
+    return result
                     
 
 
@@ -671,12 +681,7 @@ def print_puzzle(state):
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-
-
-
 # TESTING
-
-
 
 if __name__ == "__main__":
     wh = sokoban.Warehouse()
