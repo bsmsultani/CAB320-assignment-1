@@ -165,7 +165,7 @@ def taboo_cells(warehouse: sokoban.Warehouse):
 
     # the the initial warehouse string and replace all the new line characters with empty strings
 
-    warehouse_string = warehouse.__str__().replace('\n', '')
+    warehouse_string = warehouse.__str__()
 
     # get the index of the taboocells and replace the cells with 'X' in the warehouse string
 
@@ -175,9 +175,10 @@ def taboo_cells(warehouse: sokoban.Warehouse):
 
     # remove the worker, boxes and targets from the string
     warehouse_string = warehouse_string.replace('@', ' ').replace('$', ' ').replace('.', ' ').replace('*', ' ')
-
     # return the warehouse string
     return warehouse_string
+
+    
 
  
         
