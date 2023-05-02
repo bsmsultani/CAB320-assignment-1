@@ -297,7 +297,11 @@ class TrackWeight(object):
         return node.replace('@', ' ').replace('.', ' ') in self.track_weight
 
         
-
+class extend_Node(search.Node):
+    def __init__(self, state, parent=None, action=None, path_cost=0):
+        super().__init__(state, parent, action, path_cost)
+        self.track_weight = {}
+        
 
 
 class SokobanPuzzle(search.Problem):
@@ -364,11 +368,6 @@ class SokobanPuzzle(search.Problem):
 
         previousPlayerPosition = (x, y)
 
-        # for debugging, self.warehouse.worker is the coordinate of the agent in the initial state
-        # x, y = self.warehouse.worker
-        # see more by running the code and seeing __name__ == "__main__" below 
-        #print(self.warehouse.worker)
-        #print(x, y)
 
         # generate a list of legal moves (it can go anywhere expect into the walls)
 
