@@ -646,9 +646,11 @@ def solve_weighted_sokoban(warehouse: sokoban.Warehouse):
 
     pz = SokobanPuzzle(warehouse)
 
-    # if the weights are the same, use breadth first search
+    taboo_cells(warehouse)
     
     sol = search.astar_graph_search(pz)
+
+ 
 
     if sol:
         return sol.solution(), sol.path_cost
@@ -686,7 +688,7 @@ def print_puzzle(state):
 if __name__ == "__main__":
     wh = sokoban.Warehouse()
 
-    wh.load_warehouse("./warehouses/warehouse_01.txt")
+    wh.load_warehouse("./warehouses/warehouse_81.txt")
 
 
     pz = SokobanPuzzle(wh)
