@@ -592,6 +592,7 @@ class SokobanPuzzle(search.Problem):
 
         state = n.state.state
         targets = self.warehouse.targets.copy()
+        # get the coordinates of the boxes as well as their weights
         box_weights = [(coordinate, weight) for (coordinate, weight, moved) in self.weight_tracker.get_weight(state)]
 
         # sort box in ascending order of weight
@@ -600,7 +601,8 @@ class SokobanPuzzle(search.Problem):
         def manhattan_distance(a, b):
             return abs(a[0] - b[0]) + abs(a[1] - b[1])
         
-        # iterate through the boxes and find the closest target for each box
+        # iterate through the boxes and find the closest target for each box and add it to the list 
+        # as a tuple of (box, closest target)
 
         closest_box_target = []
 
@@ -628,7 +630,13 @@ class SokobanPuzzle(search.Problem):
             targets.remove(closest_target)
 
         
-        total_distance = 0
+        total_weight_to_solve = 0
+
+        # iterate through the list of closest box : target tuples and calculate the total distance from the box to the target and multiply it by the weight of the box
+        # to get the total weight to solve
+        # also add a penalty for any other box that is closer to the target than the current box
+        # this is to prevent the agent from pushing a box to the closest target
+        # that is not the target for that box
 
         for i in range(len(closest_box_target)):
             box = closest_box_target[i][0][0]
@@ -637,7 +645,7 @@ class SokobanPuzzle(search.Problem):
 
             # add the distance from the box to the target to the total distance
 
-            total_distance += manhattan_distance(box, target) * weight
+            total_weight_to_solve += manhattan_distance(box, target) * weight
 
             # if any other box is closer to the target than the current box, add a penalty to the total distance
 
@@ -647,10 +655,10 @@ class SokobanPuzzle(search.Problem):
                 other_target = closest_box_target[j][1]
 
                 if manhattan_distance(other_box, target) < manhattan_distance(box, target) and other_box != box:
-                    total_distance += manhattan_distance(other_box, target) * weight
+                    total_weight_to_solve += manhattan_distance(other_box, target) * weight
 
 
-        return total_distance
+        return total_weight_to_solve
             
             
 
