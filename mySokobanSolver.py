@@ -615,7 +615,6 @@ def check_elem_action_seq(warehouse: sokoban.Warehouse, action_seq):
 
     for i in range(0, len(state.state), warehouse.ncols):
         result += state.state[i:i + warehouse.ncols] + "\n"
-    result = result[0:len(result) - 3] + '   '
     return result
                     
 
@@ -686,7 +685,7 @@ def print_puzzle(state):
 if __name__ == "__main__":
     wh = sokoban.Warehouse()
 
-    wh.load_warehouse("./warehouses/warehouse_07.txt")
+    wh.load_warehouse("./warehouses/warehouse_5n.txt")
 
 
     pz = SokobanPuzzle(wh)
