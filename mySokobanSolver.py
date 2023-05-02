@@ -84,7 +84,11 @@ def taboo_cells(warehouse: sokoban.Warehouse):
 
     walls = warehouse.walls
 
+    # get the maximum x and y coordinates of the warehouse, this will be the last warehouse wall 
+
     max_x, max_y = max(x for x, y in walls), max(y for x, y in walls)
+
+    # from (0, 0) get all the cells that are not walls
 
     non_walls = [(x, y) for x in range(max_x + 1) for y in range(max_y + 1) if (x, y) not in walls]
 
@@ -95,10 +99,12 @@ def taboo_cells(warehouse: sokoban.Warehouse):
 
     rows = {y: [x for x, y_ in walls if y_ == y] for y in set(y for x, y in walls)}
 
+    # create dictionary with column numbers as keys and lists of y-coordinates as values
+
     columns = {x: [y for x_, y in walls if x_ == x] for x in set(x for x, y in walls)}
 
 
-    # get the minmum and maximum coordinate for each row wall
+    # get the minmum and maximum coordinate wall coordinates for each row and column
 
     for x, y in non_walls:
         if x > max(rows[y]) or x < min(rows[y]):
@@ -157,18 +163,20 @@ def taboo_cells(warehouse: sokoban.Warehouse):
                         if all((x_, corners[i][1] - 1) in walls for x_ in range(corners[i][0], corners[j][0])) or all((x_, corners[i][1] + 1) in walls for x_ in range(corners[i][0], corners[j][0])):
                             taboocells.append((x, corners[i][1]))
 
-    
-
+    # the the initial warehouse string and replace all the new line characters with empty strings
 
     warehouse_string = warehouse.__str__().replace('\n', '')
 
+    # get the index of the taboocells and replace the cells with 'X' in the warehouse string
+
     for taboocell in taboocells:
         pos = taboocell[1] * warehouse.ncols + taboocell[0]
-
         warehouse_string = warehouse_string[:pos] + 'X' + warehouse_string[pos + 1:]
 
     # remove the worker, boxes and targets from the string
     warehouse_string = warehouse_string.replace('@', ' ').replace('$', ' ').replace('.', ' ').replace('*', ' ')
+
+    # return the warehouse string
     return warehouse_string
 
  
@@ -180,9 +188,24 @@ def taboo_cells(warehouse: sokoban.Warehouse):
 
 class TrackWeight(object):
 
+    '''
+    Tracks the weight of the boxes in the warehouse as the worker moves the boxes around.
+
+    The weight of the boxes is stored in a dictionary with the state of the warehouse as the key and the value is a list of tuples.
+
+    Each tuple contains the coordinates of the box, the weight of the box and a boolean value that indicates whether the box has been moved or not
+    to reach the state it is in.
+    '''
+    
+    # the initial node is the initial state of the warehouse and the initial weight is the weight of the boxes in the initial state
+    # the number of columns is the number of columns in the warehouse string which is used to calculate the coordinates of the boxes
+
     def __init__(self, initial_node: str, initial_weight: list, numberOfColumns: int):
         self.numberOfColumns = numberOfColumns
         self.track_weight = {}
+
+        # get the coordinates of the boxes in the initial state and store them in a list of tuples with the weight of the boxes
+        # and set moved to false since the boxes have not been moved yet
 
         initial_box_coordinates = self.__get_box_coordinates___(initial_node)
         initial_box_weight = []
@@ -195,7 +218,11 @@ class TrackWeight(object):
         initial_node = initial_node.replace('@', ' ').replace('.', ' ')
         self.track_weight[initial_node] = initial_box_weight
     
-    def get_weight(self, state: str):
+    def get_weight(self, state: str) -> list:
+        '''
+        Given a state of the warehouse, return the weight of the boxes in the warehouse
+        as a list of tuples (weight, box, moved)
+        '''
         state = state.replace('@', ' ').replace('.', ' ')
         
         if state in self.track_weight:
@@ -203,28 +230,44 @@ class TrackWeight(object):
         else:
             return None
         
+        
     def get_moved_box_weight(self, state: str):
+        '''
+        Given a state of the warehouse, return the weight of the box that was moved to reach the state
+        '''
         state = state.replace('@', ' ').replace('.', ' ')
         if state in self.track_weight:
             # return the weight of the moved box
-            print(self.track_weight[state])
             return [weight for (box, weight, moved) in self.track_weight[state] if moved][0]
         else:
             return None
         
     def set_weight(self, state1: str, state2: str, newBoxCordinates: tuple):
+
+        """
+        Given two states of the warehouse, update the weight of the boxes in the second state.
+        Determine the weight of the boxes in the second state by comparing the boxes in the first state and the second state.
+        """
         
         # get the box coordinates and the weights of the boxes in the state1
         box_coordinate = self.__get_box_coordinates___(state1)
+        # get the weight of the boxes in the state1
         state_weights = self.get_weight(state1)
+
+        # get the box coordinates in the state2
         
         next_state_box_coordinates = self.__get_box_coordinates___(state2)
         next_state_box_weights = []
+
+        # for each box in the state1, check if the box is in the state2. If it is, then the weight of the box in the state2 is the 
+        # same as the weight of the box in the state1
 
         for idx, box in enumerate(box_coordinate):
             weight = state_weights[idx][1]
             if box in next_state_box_coordinates:
                 next_state_box_weights.append((box, weight, False))
+
+            # if the box is not in the state2, then the box has been moved to a new location.
             else:
                 next_state_box_weights.append((newBoxCordinates, weight, True))
 
@@ -233,7 +276,11 @@ class TrackWeight(object):
         self.track_weight[state2Str] = next_state_box_weights
 
 
+    
     def __get_box_coordinates___(self, state: str):
+        """
+        Allows the user to get the coordinates of the boxes given a state of the warehouse.
+        """
 
         box_coordinates = []
         for i in range(len(state)):
@@ -243,6 +290,10 @@ class TrackWeight(object):
         return box_coordinates
     
     def __contains__(self, node: str ):
+
+        """
+        Returns true if the state of the warehouse is in the track_weight dictionary
+        """
         return node.replace('@', ' ').replace('.', ' ') in self.track_weight
 
         
@@ -749,7 +800,7 @@ if __name__ == "__main__":
 
     # time how long it takes to solve a warehouse
 
-    wh.load_warehouse("./warehouses/warehouse_5n.txt")
+    wh.load_warehouse("./warehouses/warehouse_147.txt")
 
     pz = SokobanPuzzle(wh)
 
