@@ -602,12 +602,14 @@ class SokobanPuzzle(search.Problem):
                 # if moving the weight has moved the box closer to the target then reward the move by reducing the total distance
 
                 if self.manhattan_distance(box_coordinate, target) > self.manhattan_distance(original_box, target):
-                    total_distance -= self.manhattan_distance(original_box, target) * weight
+                    total_distance += self.manhattan_distance(original_box, target) * weight
                 else:
-                    total_distance += self.manhattan_distance(box_coordinate, target) * weight
+                    total_distance -= self.manhattan_distance(box_coordinate, target) * weight
             
             else:
-                total_distance -= self.manhattan_distance(box_coordinate, target) * weight
+                total_distance += self.manhattan_distance(box_coordinate, target) * weight
+
+        print(total_distance)
         return total_distance
 
 
@@ -750,9 +752,19 @@ def print_puzzle(state):
 if __name__ == "__main__":
     wh = sokoban.Warehouse()
 
-    wh.load_warehouse("./warehouses/warehouse_8a.txt")
+    wh.load_warehouse("./warehouses/warehouse_81.txt")
 
 
     pz = SokobanPuzzle(wh)
 
+    import time
+
+    # time the search
+
+    start = time.time()
+
     print(solve_weighted_sokoban(wh))
+
+    end = time.time()
+
+    print(end - start)
