@@ -602,12 +602,12 @@ class SokobanPuzzle(search.Problem):
                 # if moving the weight has moved the box closer to the target then reward the move by reducing the total distance
 
                 if self.manhattan_distance(box_coordinate, target) > self.manhattan_distance(original_box, target):
-                    total_distance += self.manhattan_distance(original_box, target) * weight
+                    total_distance += self.manhattan_distance(original_box, target)
                 else:
-                    total_distance -= self.manhattan_distance(box_coordinate, target) * weight
+                    total_distance -= self.manhattan_distance(box_coordinate, target)
             
             else:
-                total_distance += self.manhattan_distance(box_coordinate, target) * weight
+                total_distance += self.manhattan_distance(box_coordinate, target)
 
         print(total_distance)
         return total_distance
