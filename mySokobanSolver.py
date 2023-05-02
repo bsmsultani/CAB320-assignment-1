@@ -86,8 +86,6 @@ def taboo_cells(warehouse: sokoban.Warehouse):
 
     max_x, max_y = max(x for x, y in walls), max(y for x, y in walls)
 
-    print(max_x, max_y)
-
     non_walls = [(x, y) for x in range(max_x + 1) for y in range(max_y + 1) if (x, y) not in walls]
 
     outside_cells = set()
@@ -146,7 +144,7 @@ def taboo_cells(warehouse: sokoban.Warehouse):
                 # if they are on the same row, check if there are any cells between them that are not target cells
                 # and if there is a continuous wall on either side of the cell. If there is, then that cell is a taboo cell
                 for y in range(corners[i][1] + 1, corners[j][1]):
-                    if (corners[i][0], y) not in warehouse.targets:
+                    if (corners[i][0], y) not in warehouse.targets and (corners[i][0], y) not in walls:
                         if all((corners[i][0] - 1 , y_) in walls for y_ in range(corners[i][1], corners[j][1])) or all((corners[i][0] + 1, y_) in walls for y_ in range(corners[i][1], corners[j][1])):
                             taboocells.append((corners[i][0], y))
 
@@ -155,7 +153,7 @@ def taboo_cells(warehouse: sokoban.Warehouse):
             # and if there is continuous wall on either side of the cell. If there is, then that cell is a taboo cell
             elif corners[i][1] == corners[j][1]:
                 for x in range(corners[i][0] + 1, corners[j][0]):
-                    if (x, corners[i][1]) not in warehouse.targets:
+                    if (x, corners[i][1]) not in warehouse.targets and (x, corners[i][1]) not in walls:
                         if all((x_, corners[i][1] - 1) in walls for x_ in range(corners[i][0], corners[j][0])) or all((x_, corners[i][1] + 1) in walls for x_ in range(corners[i][0], corners[j][0])):
                             taboocells.append((x, corners[i][1]))
 
@@ -494,7 +492,6 @@ class SokobanPuzzle(search.Problem):
         newNode.parent = state
         newNode.action = action
         newNode.path_cost = self.path_cost(state.path_cost, state, action, newNode)
-
         return newNode 
 
 
@@ -539,49 +536,75 @@ class SokobanPuzzle(search.Problem):
     
     def h(self, n):
         '''
-        A simple heuristic which calculates the Manhatten Distance between the boxes and targets for each state
+        create a heuristic function that estimates the cost of the cheapest path from the state at node n to a goal state.
         '''
-        warehouse = self.warehouse
-        state = n.state
 
-        boxes = []
-        numOfUnsolvedBoxes = state.state.count('$')
+        state = n.state.state
+        targets = self.warehouse.targets.copy()
+        box_weights = [(coordinate, weight) for (coordinate, weight, moved) in self.weight_tracker.get_weight(state)]
 
-        boxStateAnalysis = state.state
+        # sort box in ascending order of weight
+        box_weights.sort(key=lambda x: x[1], reverse=True)
 
-        for box in range(numOfUnsolvedBoxes):
-            boxPositionStr = boxStateAnalysis.index('$')
-            boxStateAnalysis = boxStateAnalysis[:boxPositionStr] + ' ' + boxStateAnalysis[boxPositionStr + 1:]
-            y, x = divmod(boxPositionStr, self.warehouse.ncols)
-            boxPositionCordinates = (x, y)
-            boxes.append(boxPositionCordinates)
+        def manhattan_distance(a, b):
+            return abs(a[0] - b[0]) + abs(a[1] - b[1])
+        
+        # iterate through the boxes and find the closest target for each box
+
+        closest_box_target = []
+
+        for box in box_weights:
+            box_coordinate = box[0]
+
+            # find the closest target for the box
+            closest_target = None
+            closest_target_distance = float('inf')
+
+            for target in targets:
+                target_distance = manhattan_distance(box_coordinate, target)
+
+                if target_distance < closest_target_distance:
+                    closest_target = target
+                    closest_target_distance = target_distance
+
+            # add box : target
+
+            closest_box_target.append((box, closest_target))
 
 
-        numOfSolvedBoxes = state.state.count('*')
+            # remove the target from the list of targets
 
-        for box in range(numOfSolvedBoxes):
-            boxPositionStr = boxStateAnalysis.index('*')
-            boxStateAnalysis = boxStateAnalysis[:boxPositionStr] + ' ' + boxStateAnalysis[boxPositionStr + 1:]
-            y, x = divmod(boxPositionStr, self.warehouse.ncols)
-            boxPositionCordinates = (x, y)
-            boxes.append(boxPositionCordinates)
+            targets.remove(closest_target)
 
-        targets = warehouse.targets
+        
+        total_distance = 0
 
-        manhattenDistance = 0
+        for i in range(len(closest_box_target)):
+            box = closest_box_target[i][0][0]
+            weight = closest_box_target[i][0][1]
+            target = closest_box_target[i][1]
+
+            # add the distance from the box to the target to the total distance
+
+            total_distance += manhattan_distance(box, target) * weight
+
+            # if any other box is closer to the target than the current box, add a penalty to the total distance
+
+            for j in range(0, len(closest_box_target)):
+                other_box = closest_box_target[j][0][0]
+                other_weight = closest_box_target[j][0][1]
+                other_target = closest_box_target[j][1]
+
+                if manhattan_distance(other_box, target) < manhattan_distance(box, target) and other_box != box:
+                    total_distance += manhattan_distance(other_box, other_target) * other_weight
+                else:
+                    total_distance -= manhattan_distance(other_box, target) * weight
 
 
-        for i in range (len(boxes)):
-            #convert box and target from (x, y) to position
-            box = boxes[i][1] * warehouse.ncols + boxes[i][0]
-            target = targets[i][1] * warehouse.ncols + targets[i][0]
-
+        return total_distance - n.depth
             
-            manhattenDistance += abs(box - target)
+            
 
-        manhattenDistance -= numOfSolvedBoxes
-
-        return(manhattenDistance)
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -656,7 +679,7 @@ def check_elem_action_seq(warehouse: sokoban.Warehouse, action_seq):
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-def solve_weighted_sokoban(warehouse):
+def solve_weighted_sokoban(warehouse: sokoban.Warehouse):
     '''
     This function analyses the given warehouse.
     It returns the two items. The first item is an action sequence solution. 
@@ -680,12 +703,13 @@ def solve_weighted_sokoban(warehouse):
 
     '''
 
-    pz = SokobanPuzzle(warehouse)    
+    pz = SokobanPuzzle(warehouse)
+
+    # if the weights are the same, use breadth first search
     
     sol = search.astar_graph_search(pz)
 
     if sol:
-        print("Solution found")
         return sol.solution(), sol.path_cost
     else:
         return "Impossible"
@@ -725,29 +749,12 @@ if __name__ == "__main__":
 
     # time how long it takes to solve a warehouse
 
-    import time
-
-    wh.load_warehouse("./warehouses/warehouse_03.txt")
-
+    wh.load_warehouse("./warehouses/warehouse_5n.txt")
 
     pz = SokobanPuzzle(wh)
 
-    print(wh)
-    #Solve
-
-    start = time.time()
-
     print(solve_weighted_sokoban(wh))
 
-    end = time.time()
+    print_puzzle(pz.initial.state)
 
-    print("Time taken to solve warehouse: ", end - start, "seconds")
-
-    """ actionsequence = ['Up', 'Up', 'Left', 'Down', 'Right', 'Down', 'Left', 'Left', 'Left', 'Left', 'Right', 'Right']
-
-    state = pz.initial
-
-    for action in actionsequence:
-        state = pz.result(state, action)
-        print_puzzle(state)
-    """
+    print_puzzle(taboo_cells(wh))
