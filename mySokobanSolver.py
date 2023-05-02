@@ -183,124 +183,58 @@ def taboo_cells(warehouse: sokoban.Warehouse):
         
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-################ auxuallary function #########################
+################ auxuallary classes #########################
 
 
-class TrackWeight(object):
-
-    '''
-    Tracks the weight of the boxes in the warehouse as the worker moves the boxes around.
-
-    The weight of the boxes is stored in a dictionary with the state of the warehouse as the key and the value is a list of tuples.
-
-    Each tuple contains the coordinates of the box, the weight of the box and a boolean value that indicates whether the box has been moved or not
-    to reach the state it is in.
-    '''
-    
-    # the initial node is the initial state of the warehouse and the initial weight is the weight of the boxes in the initial state
-    # the number of columns is the number of columns in the warehouse string which is used to calculate the coordinates of the boxes
-
-    def __init__(self, initial_node: str, initial_weight: list, numberOfColumns: int):
-        self.numberOfColumns = numberOfColumns
-        self.track_weight = {}
-
-        # get the coordinates of the boxes in the initial state and store them in a list of tuples with the weight of the boxes
-        # and set moved to false since the boxes have not been moved yet
-
-        initial_box_coordinates = self.__get_box_coordinates___(initial_node)
-        initial_box_weight = []
-
-        for idx, box in enumerate(initial_box_coordinates):
-            weight = initial_weight[idx]
-            initial_box_weight.append((box, weight, False))
-        
-
-        initial_node = initial_node.replace('@', ' ').replace('.', ' ')
-        self.track_weight[initial_node] = initial_box_weight
-    
-    def get_weight(self, state: str) -> list:
-        '''
-        Given a state of the warehouse, return the weight of the boxes in the warehouse
-        as a list of tuples (weight, box, moved)
-        '''
-        state = state.replace('@', ' ').replace('.', ' ')
-        
-        if state in self.track_weight:
-            return self.track_weight[state]
-        else:
-            return None
-        
-        
-    def get_moved_box_weight(self, state: str):
-        '''
-        Given a state of the warehouse, return the weight of the box that was moved to reach the state
-        '''
-        state = state.replace('@', ' ').replace('.', ' ')
-        if state in self.track_weight:
-            # return the weight of the moved box
-            return [weight for (box, weight, moved) in self.track_weight[state] if moved][0]
-        else:
-            return None
-        
-    def set_weight(self, state1: str, state2: str, newBoxCordinates: tuple):
-
-        """
-        Given two states of the warehouse, update the weight of the boxes in the second state.
-        Determine the weight of the boxes in the second state by comparing the boxes in the first state and the second state.
-        """
-        
-        # get the box coordinates and the weights of the boxes in the state1
-        box_coordinate = self.__get_box_coordinates___(state1)
-        # get the weight of the boxes in the state1
-        state_weights = self.get_weight(state1)
-
-        # get the box coordinates in the state2
-        
-        next_state_box_coordinates = self.__get_box_coordinates___(state2)
-        next_state_box_weights = []
-
-        # for each box in the state1, check if the box is in the state2. If it is, then the weight of the box in the state2 is the 
-        # same as the weight of the box in the state1
-
-        for idx, box in enumerate(box_coordinate):
-            weight = state_weights[idx][1]
-            if box in next_state_box_coordinates:
-                next_state_box_weights.append((box, weight, False))
-
-            # if the box is not in the state2, then the box has been moved to a new location.
-            else:
-                next_state_box_weights.append((newBoxCordinates, weight, True))
-
-        state2Str = state2.replace('@', ' ').replace('.', ' ')
-
-        self.track_weight[state2Str] = next_state_box_weights
-
-
-    
-    def __get_box_coordinates___(self, state: str):
-        """
-        Allows the user to get the coordinates of the boxes given a state of the warehouse.
-        """
-
-        box_coordinates = []
-        for i in range(len(state)):
-            if state[i] == '$' or state[i] == "*":
-                y, x = divmod(i, self.numberOfColumns)
-                box_coordinates.append((x, y))
-        return box_coordinates
-    
-    def __contains__(self, node: str ):
-
-        """
-        Returns true if the state of the warehouse is in the track_weight dictionary
-        """
-        return node.replace('@', ' ').replace('.', ' ') in self.track_weight
-
-        
 class extend_Node(search.Node):
+
+    """
+    An extended version of the Node class that keeps track of the weight of the boxes
+    """
     def __init__(self, state, parent=None, action=None, path_cost=0):
         super().__init__(state, parent, action, path_cost)
-        self.track_weight = {}
+
+        # box : (weight, moved)
+        self.box_weight = {}
+    
+
+    def set_box_weight(self, box_coordinates):
+        """
+        Given a list of box coordinates, of the form [(x1, y1), (x2, y2), ...], which corresponds to the coordinates of the boxes in the node.
+        Set the box_weight dictionary of the node to be of the form {box_coordinate : (weight, moved), ...}
+
+        (NOTE : I didn't want to implement the get box coordinate function directly into the node class because it copies it for every node, which is not efficient)
+        """
+
+        # if parent is None, then the node is the initial state, so all the boxes are not moved
+
+        # otherwise
+        if self.parent:
+            # for every box in the current node boxes
+            for box in box_coordinates:
+                # if the box is in the parent, then the box is not moved
+                if box in self.parent.box_weight:
+                    self.box_weight[box] = (self.parent.box_weight[box][0], False) # weight = weight of the box in the parent, moved = False
+                else:
+                # if the box is not in the parent, then the box is moved
+                    for parent_box in self.parent.box_weight:
+                        if parent_box not in box_coordinates:
+                            self.box_weight[box] = (self.parent.box_weight[parent_box][0], True) # weight = weight of the box in the parent, moved = True
+                            break
+    
+    def get_moved_box_weight(self):
+        if self.parent:
+            print(self.parent.box_weight)
+        
+        print(self.box_weight)
+        
+        for box in self.box_weight:
+            if self.box_weight[box][1]:
+                return self.box_weight[box][0]
+        
+        return None
+    
+
         
 
 
@@ -346,9 +280,27 @@ class SokobanPuzzle(search.Problem):
         
         goal = initial.replace('$', ' ').replace('.', '*').replace('@', ' ')
 
-        super().__init__(search.Node(initial), search.Node(goal))
+        initial = extend_Node(initial)
+        
+        for weight, box in zip(warehouse.weights, warehouse.boxes):
+            initial.box_weight[box]  = (weight, False)
+        
+        goal = extend_Node(goal)
 
-        self.weight_tracker = TrackWeight(initial, self.warehouse.weights, self.warehouse.ncols)
+        super().__init__(initial, goal)
+        
+
+    def get_box_coordinate(self, state: str):
+        """
+        Gets the coordinates of the boxes in the state given to the function.
+        """
+        box_coordinates = []
+        for i in range(len(state)):
+            if state[i] == '$' or state[i] == "*":
+                y, x = divmod(i, self.warehouse.ncols)
+                box_coordinates.append((x, y))
+        return box_coordinates
+
     
 
     def actions(self, state: search.Node):
@@ -501,9 +453,6 @@ class SokobanPuzzle(search.Problem):
                     nextState = nextState[:boxNewPositionStr] + '$' + nextState[boxNewPositionStr + 1:]
 
 
-                # if the current state's weight is not in the weight tracker then we can calculate the weight of the new state
-                if state.state in self.weight_tracker:
-                    self.weight_tracker.set_weight(state.state, nextState, newBoxCordinates)
 
             else:
                 #if the new boxes position is valid we need to move it in the warehouse object and update the string representation
@@ -538,9 +487,10 @@ class SokobanPuzzle(search.Problem):
                 
 
         
-        newNode = search.Node(nextState)
+        newNode = extend_Node(nextState)
         newNode.parent = state
         newNode.action = action
+        newNode.set_box_weight(self.get_box_coordinate(nextState))
         newNode.path_cost = self.path_cost(state.path_cost, state, action, newNode)
         return newNode 
 
@@ -558,7 +508,11 @@ class SokobanPuzzle(search.Problem):
             return True    
 
 
-    def path_cost(self, c, state1: search.Node, action, state2: search.Node):
+    def path_cost(self, c, state1: extend_Node, action, state2: extend_Node):
+
+        print(state2.depth)
+
+        print(c)
     
         '''
         Return the cost of a solution path that arrives at state2 from state1 via action, assuming cost c to get up to state1.
@@ -574,92 +528,23 @@ class SokobanPuzzle(search.Problem):
             return c
 
         # if the player has moved but not pushed a box
-        elif state1.state.replace('@', ' ').replace('.', ' ') == state2.state.replace('@', ' ').replace('.', ' '):
+        elif state1.get_moved_box_weight() == None:
             return c + 1
         
-        # if the player has pushed a box
+        # if the player has moved and pushed a box
+
         else:
-            return c + 1 + self.weight_tracker.get_moved_box_weight(state2.state)
+            return c + 1 + state1.get_moved_box_weight()
 
             
 
     
-    def h(self, n):
+    def h(self, n: extend_Node):
         '''
         create a heuristic function that estimates the cost of the cheapest path from the state at node n to a goal state.
         '''
 
-        state = n.state.state
-        targets = self.warehouse.targets.copy()
-        # get the coordinates of the boxes as well as their weights
-        box_weights = [(coordinate, weight) for (coordinate, weight, moved) in self.weight_tracker.get_weight(state)]
-
-        # sort box in ascending order of weight
-        box_weights.sort(key=lambda x: x[1], reverse=True)
-
-        def manhattan_distance(a, b):
-            return abs(a[0] - b[0]) + abs(a[1] - b[1])
-        
-        # iterate through the boxes and find the closest target for each box and add it to the list 
-        # as a tuple of (box, closest target)
-
-        closest_box_target = []
-
-        for box in box_weights:
-            box_coordinate = box[0]
-
-            # find the closest target for the box
-            closest_target = None
-            closest_target_distance = float('inf')
-
-            for target in targets:
-                target_distance = manhattan_distance(box_coordinate, target)
-
-                if target_distance < closest_target_distance:
-                    closest_target = target
-                    closest_target_distance = target_distance
-
-            # add box : target
-
-            closest_box_target.append((box, closest_target))
-
-
-            # remove the target from the list of targets
-
-            targets.remove(closest_target)
-
-        
-        total_weight_to_solve = 0
-
-        # iterate through the list of closest box : target tuples and calculate the total distance from the box to the target and multiply it by the weight of the box
-        # to get the total weight to solve
-        # also add a penalty for any other box that is closer to the target than the current box
-        # this is to prevent the agent from pushing a box to the closest target
-        # that is not the target for that box
-
-        for i in range(len(closest_box_target)):
-            box = closest_box_target[i][0][0]
-            weight = closest_box_target[i][0][1]
-            target = closest_box_target[i][1]
-
-            # add the distance from the box to the target to the total distance
-
-            total_weight_to_solve += manhattan_distance(box, target) * weight
-
-            # if any other box is closer to the target than the current box, add a penalty to the total distance
-
-            for j in range(0, len(closest_box_target)):
-                other_box = closest_box_target[j][0][0]
-                other_weight = closest_box_target[j][0][1]
-                other_target = closest_box_target[j][1]
-
-                if manhattan_distance(other_box, target) < manhattan_distance(box, target) and other_box != box:
-                    total_weight_to_solve += manhattan_distance(other_box, target) * weight
-
-
-        return total_weight_to_solve
-            
-            
+        return 0
 
 
 
@@ -801,16 +686,9 @@ def print_puzzle(state):
 if __name__ == "__main__":
     wh = sokoban.Warehouse()
 
-    # CHANGE THIS TO TEST DIFFERENT WAREHOUSES, FOR EXAMPLE:
+    wh.load_warehouse("./warehouses/warehouse_01.txt")
 
-    # time how long it takes to solve a warehouse
-
-    wh.load_warehouse("./warehouses/warehouse_31.txt")
 
     pz = SokobanPuzzle(wh)
 
     print(solve_weighted_sokoban(wh))
-
-    print_puzzle(pz.initial.state)
-
-    print_puzzle(taboo_cells(wh))
