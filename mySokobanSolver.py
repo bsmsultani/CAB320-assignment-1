@@ -609,6 +609,9 @@ class SokobanPuzzle(search.Problem):
             else:
                 total_distance += self.manhattan_distance(box_coordinate, target)
 
+        if box_coordinate in self.warehouse.targets:
+            total_distance -= weight
+
         print(total_distance)
         return total_distance
 
@@ -752,7 +755,7 @@ def print_puzzle(state):
 if __name__ == "__main__":
     wh = sokoban.Warehouse()
 
-    wh.load_warehouse("./warehouses/warehouse_81.txt")
+    wh.load_warehouse("./warehouses/warehouse_8a.txt")
 
 
     pz = SokobanPuzzle(wh)
