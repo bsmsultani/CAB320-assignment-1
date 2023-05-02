@@ -165,7 +165,7 @@ def taboo_cells(warehouse: sokoban.Warehouse):
 
     # the the initial warehouse string and replace all the new line characters with empty strings
 
-    warehouse_string = warehouse.__str__().replace('\n', '')
+    warehouse_string = warehouse.__str__()
 
     # get the index of the taboocells and replace the cells with 'X' in the warehouse string
 
@@ -182,6 +182,8 @@ def taboo_cells(warehouse: sokoban.Warehouse):
 
     # return the warehouse string
     return warehouse_string
+
+    
 
  
         
@@ -252,17 +254,6 @@ class SokobanPuzzle(search.Problem):
     the provided module 'search.py'. 
     
     '''
-    
-    #
-    #         "INSERT YOUR CODE HERE"
-    #
-    #     Revisit the sliding puzzle and the pancake puzzle for inspiration!
-    #
-    #     Note that you will need to add several functions to 
-    #     complete this class. For example, a 'result' method is needed
-    #     to satisfy the interface of 'search.Problem'.
-    #
-    #     You are allowed (and encouraged) to use auxiliary functions and classes
 
     
     def __init__(self, warehouse: sokoban.Warehouse):
@@ -322,9 +313,15 @@ class SokobanPuzzle(search.Problem):
         
 
     def get_box_coordinate(self, state: str):
-        """
-        Gets the coordinates of the boxes in the state given to the function.
-        """
+        '''
+        Return the x and y cordinates of the boxes in state 
+
+        @param state: A valid string representation of a state
+
+        @return
+            A list of cordinates for the boxes (either on a target or not) in the given state
+
+        '''
         box_coordinates = []
         for i in range(len(state)):
             if state[i] == '$' or state[i] == "*":
@@ -343,7 +340,12 @@ class SokobanPuzzle(search.Problem):
     def actions(self, state: search.Node):
         
         '''
-        Return the list of legal actions that can be executed in the given state.
+        Return the list of legal actions that can be executed in the given state. 
+
+        @param state: A valid state
+
+        @return
+            Return a list of possible moves that do not result in the worker object being places in a wall
         '''
         
         # index of the @ symbol in the state string
@@ -383,40 +385,23 @@ class SokobanPuzzle(search.Problem):
 
         '''
 
-        Function description:
+        Returns the state that corresponds to the inputted action (as long as it is valid), including moving a box. 
 
-        Return the state that results from executing the given action in the given state.
+        @param node: A valid node
 
-        The state is altered by moving the agent in the given direction, if that direction is legal.
+        @param action: An action which does not allow the player to be in a wall
 
-        The movement of the agent may also cause the agent to push a box. Therefore we need to check if the agent is pushing a box.
-
-        Then we also need to update the cost of new state. THIS IS THE ONLY PART THAT IS NOT IMPLEMENTED YET.
+        @return
+            Return a new node to be searched that contains a string representation of the result of the action
 
         '''
 
         #Extract box positions
         boxes = []
-        numOfUnsolvedBoxes = state.state.count('$')
 
         boxStateAnalysis = state.state
-
-        for box in range(numOfUnsolvedBoxes):
-            boxPositionStr = boxStateAnalysis.index('$')
-            boxStateAnalysis = boxStateAnalysis[:boxPositionStr] + ' ' + boxStateAnalysis[boxPositionStr + 1:]
-            y, x = divmod(boxPositionStr, self.warehouse.ncols)
-            boxPositionCordinates = (x, y)
-            boxes.append(boxPositionCordinates)
-
-
-        numOfSolvedBoxes = state.state.count('*')
-
-        for box in range(numOfSolvedBoxes):
-            boxPositionStr = boxStateAnalysis.index('*')
-            boxStateAnalysis = boxStateAnalysis[:boxPositionStr] + ' ' + boxStateAnalysis[boxPositionStr + 1:]
-            y, x = divmod(boxPositionStr, self.warehouse.ncols)
-            boxPositionCordinates = (x, y)
-            boxes.append(boxPositionCordinates)
+        
+        boxes = self.get_box_coordinate(boxStateAnalysis)
 
         #Move the player based on the action
 
@@ -534,27 +519,39 @@ class SokobanPuzzle(search.Problem):
 
     def goal_test(self, node: search.Node):
         '''
-        Return True if the state is a goal state or False, otherwise.
+    
+        Determines whether the current state is the goal state or not
+
+        @param node: A valid node
+
+        @return
+            If the current node's string representation matches the goal state's string representation returns true, indicating the searching algorithm has found the goal
         '''
 
-        teststate = node.state
-
-        teststate = teststate.replace('@', ' ')
+        teststate = node.state.replace('@', ' ')
 
         if teststate == self.goal.state:
             return True    
 
 
     def path_cost(self, c, state1: extend_Node, action, state2: extend_Node):
-
+       
+        '''
     
-        '''
-        Return the cost of a solution path that arrives at state2 from state1 via action, assuming cost c to get up to state1.
+        Determines the cost of moving from one state to the next, including when pushing boxes.
+            
+        @param c: the previous node's cost
 
-        The cost of an action is 1 + weight of the box pushed, if any.
+        @param state1: a valid state to move from (usually the current state)
+
+        @param state2: a valid state to move to (usually the next state)
+            
+        @return
+            Depending on the players actions, returns the cost of moving from state1 to state2. If the player has not moved the previous node's cost is returned.
+            If the worker has moved but not pushed a box return the previous node's cost + 1. Finally if the worker has pushed a box, return the cost of the previous node + 1 
+            (for walking) + the cost of moving the box (weight)
         '''
 
-        # get state2 weight from the weight tracker
 
         # if the player hasn't moved
 
@@ -643,8 +640,6 @@ def check_elem_action_seq(warehouse: sokoban.Warehouse, action_seq):
     '''
 
 
-    ## Situations which are illegal: Box in wall, pushing 2 boxes, player in wall, player in a box
-
     walls = warehouse.walls
 
     boxes = warehouse.boxes
@@ -666,11 +661,16 @@ def check_elem_action_seq(warehouse: sokoban.Warehouse, action_seq):
 
     for move in action_seq:
 
-        #update boxes, incase any have been moved
-        boxes = warehouse.boxes
-        
+        previousPlayerPosition = playerposition        
         #move to next state
         state = pz.result(state, move)
+
+        #update boxes, incase any have been moved
+        box_coordinates = []
+        for i in range(len(state.state)):
+            if state.state[i] == '$' or state.state[i] == "*":
+                y, x = divmod(i, warehouse.ncols)
+                box_coordinates.append((x, y))
 
         #extract the players cordinates for the move that has just occured
 
@@ -680,8 +680,15 @@ def check_elem_action_seq(warehouse: sokoban.Warehouse, action_seq):
 
         #check if player position is in a wall or box if the move is made
 
-        if playerposition in walls or playerposition in boxes:
+        if playerposition in walls or playerposition in box_coordinates or playerposition == previousPlayerPosition:
             return "Impossible"
+        
+    
+    result = ""
+
+    for i in range(0, len(state.state), warehouse.ncols):
+        result += state.state[i:i + warehouse.ncols] + "\n"
+    return result
                     
 
 
@@ -714,9 +721,11 @@ def solve_weighted_sokoban(warehouse: sokoban.Warehouse):
 
     pz = SokobanPuzzle(warehouse)
 
-    # if the weights are the same, use breadth first search
+    taboo_cells(warehouse)
     
     sol = search.astar_graph_search(pz)
+
+ 
 
     if sol:
         return sol.solution(), sol.path_cost
@@ -744,17 +753,13 @@ def print_puzzle(state):
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-
-
-
 # TESTING
-
-
 
 if __name__ == "__main__":
     wh = sokoban.Warehouse()
 
-    wh.load_warehouse("./warehouses/warehouse_8a.txt")
+    wh.load_warehouse("./warehouses/warehouse_81.txt")
+
 
     pz = SokobanPuzzle(wh)
 
