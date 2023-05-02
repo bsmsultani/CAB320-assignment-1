@@ -647,12 +647,10 @@ class SokobanPuzzle(search.Problem):
                 other_target = closest_box_target[j][1]
 
                 if manhattan_distance(other_box, target) < manhattan_distance(box, target) and other_box != box:
-                    total_distance += manhattan_distance(other_box, other_target) * other_weight
-                else:
-                    total_distance -= manhattan_distance(other_box, target) * weight
+                    total_distance += manhattan_distance(other_box, target) * weight
 
 
-        return total_distance - n.depth
+        return total_distance
             
             
 
@@ -800,7 +798,7 @@ if __name__ == "__main__":
 
     # time how long it takes to solve a warehouse
 
-    wh.load_warehouse("./warehouses/warehouse_147.txt")
+    wh.load_warehouse("./warehouses/warehouse_31.txt")
 
     pz = SokobanPuzzle(wh)
 
